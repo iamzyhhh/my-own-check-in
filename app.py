@@ -40,7 +40,7 @@ def get_stats():
     return stats
 
 # 网页界面
-st.title("🏆 我的打卡成就系统")
+st.title("🏆 我的打卡系统")
 st.write(f"今天是：{datetime.now().strftime('%Y/%m/%d')}")
 
 stats = get_stats()
