@@ -86,7 +86,7 @@ if st.button("🚀 确认提交并同步 (双端通用)", use_container_width=Tr
 
     # 读取旧数据并全量重排（防止乱码和格式错乱）
     old_rows = []
-    header = ["时间", "进度"] + [f"荣耀_{i+1}" for i in range(N)] + ["隔离"] + [f"追责_{i+1}" for i in range(N)]
+    header = ["时间", "进度"] + [f"已完成_{i+1}" for i in range(N)] + ["隔离"] + [f"未完成_{i+1}" for i in range(N)]
     if os.path.exists(LOG_FILE):
         with open(LOG_FILE, 'r', encoding='utf-8-sig') as f:
             reader = list(csv.reader(f))
