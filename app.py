@@ -84,3 +84,17 @@ if st.button("🚀 确认提交今日战果", use_container_width=True):
     
     st.success("提交成功！加油，明天见！")
     st.balloons() # 撒花庆祝
+    # --- 这一段是新增的下载功能 ---
+st.markdown("---")
+if os.path.exists(LOG_FILE):
+    # 读取最新的数据
+    with open(LOG_FILE, "rb") as file:
+        st.download_button(
+            label="📂 点击下载打卡记录 (CSV)",
+            data=file,
+            file_name=f"我的打卡备份_{datetime.now().strftime('%m%d')}.csv",
+            mime="text/csv",
+            use_container_width=True
+        )
+else:
+    st.info("💡 还没有历史记录，先完成一次打卡吧！")
