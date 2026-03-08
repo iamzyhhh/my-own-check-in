@@ -7,7 +7,7 @@ import time  # 导入时间模块用于延迟
 
 # ================= 配置区域 =================
 DAILY_TASKS = ["数学每日进程", "大英赛每日汉译英", "每日英语单词", "408循环记忆", "vibe coding课程学习"]
-LOG_FILE = "work_history.csv"
+LOG_FILE = "my_study_log.csv"
 # ===========================================
 
 st.set_page_config(page_title="独立连击打卡系统", page_icon="🎯")
