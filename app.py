@@ -102,17 +102,21 @@ if st.button("🚀 确认提交 (严格校准版)", use_container_width=True):
     header = ["时间", "进度"] + [f"已完成_{i+1}" for i in range(N)] + ["隔离"] + [f"未完成_{i+1}" for i in range(N)]
     all_data = [header]
     if os.path.exists(LOG_FILE):
-        with open(LOG_FILE, 'r', encoding='utf-8-sig') as f:
-            old_rows = list(csv.reader(f))
-            for row in old_rows[1:]: # 重新排列旧行防止错位
-                if not row: continue
-                d_items = [it for it in row if any(x in str(it) for x in ["🔥", "✨", "👑"])]
-                f_items = [it for it in row if "❌" in str(it)]
-                rebuilt = [row[0], row[1]]
-                for i in range(N): rebuilt.append(d_items[i] if i < len(d_items) else "")
-                rebuilt.append(">>>")
-                for i in range(N): rebuilt.append(f_items[i] if i < len(f_items) else "")
-                all_data.append(rebuilt)
+        # --- 强制显示下载按钮 ---
+st.markdown("---")
+try:
+    with open(LOG_FILE, "rb") as f:
+        st.download_button(
+            label="📂 点击下载打卡记录 (CSV)", 
+            data=f, 
+            file_name=f"CheckIn_Backup_{datetime.now().strftime('%m%d')}.csv", 
+            mime="text/csv", 
+            use_container_width=True
+        )
+except FileNotFoundError:
+    # 如果真的没文件，显示一个灰色的占位说明
+    st.button("📂 暂无记录可供下载", disabled=True, use_container_width=True)
+    st.info("💡 如果你刚提交过，请点击右上角 'Rerun' 刷新网页。")
     
     all_data.append(new_row)
     with open(LOG_FILE, 'w', newline='', encoding='utf-8-sig') as f:
