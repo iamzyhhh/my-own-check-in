@@ -5,73 +5,110 @@ import os
 import csv
 import time
 import random
-import requests  # 新增：用于联网获取语录
+import requests
 
 # ================= 配置区域 =================
 DAILY_TASKS = ["数学每日进程", "大英赛每日汉译英", "每日英语单词", "408循环记忆", "vibe coding课程学习"]
 LOG_FILE = "my_study_log.csv"
 
-# 备用语录库（网络请求失败时使用）
+# 备用高质量文学语录（网络不稳定时使用）
 BACKUP_QUOTES = [
-    "“每一个不曾起舞的日子，都是对生命的辜负。” —— 尼采",
-    "“所谓强大，不是从不失败，而是每次倒下都能爬起来。”",
-    "“那些看似不起波澜的日复一日，会在某天让你看到坚持的意义。”",
-    "“乾坤未定，你我皆是黑马。”"
+    "“人生的磨难是很多的，所以我们不可对于每一件轻微的伤害都过于敏感。” —— 勃朗特《简·爱》",
+    "“在大雪封闭了所有出路时刻，我们要练习在冰封的土地上跳舞。” —— 余秀华",
+    "“满地都是六便士，他却抬头看见了月亮。” —— 毛姆《月亮与六便士》",
+    "“一个人可以被毁灭，但不能给打败。” —— 海明威《老人与海》"
 ]
 # ===========================================
 
-st.set_page_config(page_title="自律成就系统", page_icon="🎯")
+st.set_page_config(page_title="自律成就系统", page_icon="🎯", layout="centered")
 
-# 获取今天的日期
+# 获取日期
 today_str = datetime.now().strftime("%Y年%m月%d日")
 
-# --- 联网获取语录函数 ---
-def get_daily_quote():
+# --- 联网获取语录（精准筛选版） ---
+def get_refined_quote():
     try:
-        # 调用 Hitokoto API 获取励志类 (c) 或 文学类 (d) 语录
-        # 你可以修改参数 c=i (诗词), c=k (哲学) 等
-        response = requests.get("https://v1.hitokoto.cn/?c=c&c=d&c=h&c=k", timeout=3)
+        # c=d (文学), c=k (哲学)
+        response = requests.get("https://v1.hitokoto.cn/?c=d&c=k&min_length=15&max_length=30", timeout=3)
         if response.status_code == 200:
             data = response.json()
-            return f"“{data['hitokoto']}” —— 《{data['from']}》"
+            # 拼接格式：语录 + 作者 + 来源
+            author = data['from_who'] if data['from_who'] else "佚名"
+            source = data['from']
+            return f"“{data['hitokoto']}”", f"—— {author} 《{source}》"
     except:
         pass
-    return random.choice(BACKUP_QUOTES)
+    # 如果失败，从备份中随机挑一句并拆分
+    q = random.choice(BACKUP_QUOTES)
+    parts = q.split(" —— ")
+    return parts[0], parts[1]
 
-# --- 1. 初始化页面状态 ---
+# --- 1. 状态管理 ---
 if 'entered' not in st.session_state:
     st.session_state['entered'] = False
 
-# 确保语录在一次会话中只获取一次，防止刷新网页时语录乱跳
-if 'quote' not in st.session_state:
-    with st.spinner('正在为你挑选今日寄语...'):
-        st.session_state['quote'] = get_daily_quote()
+if 'quote_data' not in st.session_state:
+    with st.spinner('正在为您翻阅书卷...'):
+        st.session_state['quote_data'] = get_refined_quote()
 
-# --- 2. 欢迎入场页面 ---
+# --- 2. 流动感欢迎页面 ---
 if not st.session_state['entered']:
     st.balloons()
     
+    # 注入自定义 CSS 打造流动感背景
+    st.markdown("""
+        <style>
+        .quote-card {
+            background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+            padding: 40px;
+            border-radius: 30px;
+            border-left: 8px solid #4CAF50;
+            box-shadow: 10px 10px 30px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            margin: 20px 0;
+        }
+        .quote-text {
+            color: #2c3e50;
+            font-size: 1.5rem;
+            font-family: "Noto Serif SC", serif;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        .quote-author {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+            text-align: right;
+            font-style: italic;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
     st.markdown("<br><br>", unsafe_allow_html=True)
     st.markdown(f"<h1 style='text-align: center; color: #4CAF50;'>🏆 欢迎回来</h1>", unsafe_allow_html=True)
-    st.markdown(f"<h2 style='text-align: center;'>今天是：<span style='color: #FF5722;'>{today_str}</span></h2>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='text-align: center; color: #34495e;'>{today_str}</h2>", unsafe_allow_html=True)
     
-    # 显示语录
+    # 获取拆分后的语录和作者
+    content, meta = st.session_state['quote_data']
+    
+    # 渲染语录卡片
     st.markdown(f"""
-        <div style='text-align: center; padding: 25px; background-color: #f9f9f9; border-radius: 15px; border-left: 5px solid #4CAF50; margin: 20px 0;'>
-            <p style='color: #333; font-size: 1.25em; font-style: italic; line-height: 1.6;'>{st.session_state['quote']}</p>
+        <div class="quote-card">
+            <div class="quote-text">{content}</div>
+            <div class="quote-author">{meta}</div>
         </div>
     """, unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns([1, 1, 1])
+    col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
         if st.button("✨ 开启今日挑战", use_container_width=True):
             st.session_state['entered'] = True
             st.rerun()
     st.stop()
 
-# --- 3. 核心功能逻辑（保持不变） ---
+# --- 3. 核心功能逻辑 ---
 def get_stats():
     stats = {task: {"streak": 0, "fail": 0, "total": 0} for task in DAILY_TASKS}
     if not os.path.exists(LOG_FILE): return stats
@@ -101,12 +138,12 @@ def get_stats():
     return stats
 
 st.title("🎯 我的成就系统")
-st.write(f"当前日期：{today_str}")
+st.caption(f"📅 记录于 {today_str}")
 
 stats = get_stats()
 done_list = []
 
-st.subheader("今日任务确认")
+st.subheader("今日任务")
 for task in DAILY_TASKS:
     s, f = stats[task]['streak'], stats[task]['fail']
     badge = f"🔥{s}d" if s > 0 else (f"❌{f}d" if f > 0 else "🆕")
