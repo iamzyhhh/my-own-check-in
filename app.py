@@ -3,33 +3,7 @@ import pandas as pd
 from datetime import datetime
 import os
 import csv
-import time  # 导入时间模块用于延迟
-import streamlit as st
-import pandas as pd
-from datetime import datetime
-import os
-import csv
 import time
-
-# ================= 1. 新增：开场秀和日期组件 =================
-# st.set_page_config(page_title="独立连击打卡系统", page_icon="🎯") # 如果你代码里有这行，先把它注释掉，移到最上面来
-
-# 获取今天的日期
-today_str = datetime.now().strftime("%Y年%m月%d日")
-
-# 只有第一次打开网页时才放气球 (防止每次提交打卡都重复放)
-if 'first_load' not in st.session_state:
-    st.balloons() # 放飞气球！
-    st.session_state['first_load'] = False # 标记已加载
-    
-    # 显示欢迎文字和日期 (带一点延迟，配合气球动画)
-    with st.container():
-        st.markdown(f"<h1 style='text-align: center; color: #4CAF50;'>🏆 欢迎回来！</h1>", unsafe_allow_html=True)
-        st.markdown(f"<h3 style='text-align: center;'>今天是：<span style='color: #FF5722;'>{today_str}</span></h3>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align: center; color: #757575;'>又是充满活力的一天，准备好接受挑战了吗？</p>", unsafe_allow_html=True)
-        time.sleep(1.5) # 给动画留点表演时间
-        st.rerun() # 自动刷新进入打卡主界面
-
 
 # ================= 配置区域 =================
 DAILY_TASKS = ["数学每日进程", "大英赛每日汉译英", "每日英语单词", "408循环记忆", "vibe coding课程学习"]
@@ -38,6 +12,33 @@ LOG_FILE = "my_study_log.csv"
 
 st.set_page_config(page_title="独立连击打卡系统", page_icon="🎯")
 
+# 获取今天的日期
+today_str = datetime.now().strftime("%Y年%m月%d日")
+
+# --- 1. 初始化页面状态 ---
+if 'entered' not in st.session_state:
+    st.session_state['entered'] = False
+
+# --- 2. 欢迎入场页面 ---
+if not st.session_state['entered']:
+    st.balloons() # 进场气球
+    
+    # 居中显示的容器
+    st.markdown("<br><br>", unsafe_allow_html=True) # 留白
+    st.markdown(f"<h1 style='text-align: center; color: #4CAF50;'>🏆 欢迎回来</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='text-align: center;'>今天是：<span style='color: #FF5722;'>{today_str}</span></h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #757575; font-size: 1.2em;'>“每一个不曾起舞的日子，都是对生命的辜负。”</p>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # 确认进入按钮（居中处理）
+    col1, col2, col3 = st.columns([1, 1, 1])
+    with col2:
+        if st.button("✨ 开启今日挑战", use_container_width=True):
+            st.session_state['entered'] = True
+            st.rerun()
+    st.stop() # 停止运行后面的代码，确保只显示欢迎页
+
+# --- 3. 核心功能逻辑（只有进入后才会运行） ---
 def get_stats():
     stats = {task: {"streak": 0, "fail": 0, "total": 0} for task in DAILY_TASKS}
     if not os.path.exists(LOG_FILE): return stats
@@ -66,11 +67,13 @@ def get_stats():
     except: pass
     return stats
 
-st.title("🏆 独立连击打卡系统")
+st.title("🎯 我的成就系统")
+st.write(f"当前日期：{today_str}")
+
 stats = get_stats()
 done_list = []
 
-st.subheader("今日任务")
+st.subheader("今日任务确认")
 for task in DAILY_TASKS:
     s, f = stats[task]['streak'], stats[task]['fail']
     badge = f"🔥{s}d" if s > 0 else (f"❌{f}d" if f > 0 else "🆕")
@@ -97,6 +100,7 @@ if st.button("🚀 确认提交", use_container_width=True):
             new_row.append(f"{icon}{d}/{tot}d {t}")
         else: new_row.append("")
     new_row.append(">>>")
+    
     # 追责榜
     sorted_todo = sorted(todo_list, key=lambda x: stats[x]['fail'], reverse=True)
     for i in range(N):
@@ -125,11 +129,10 @@ if st.button("🚀 确认提交", use_container_width=True):
     with open(LOG_FILE, 'w', newline='', encoding='utf-8-sig') as f:
         csv.writer(f).writerows(all_data)
     
-    # --- 改进后的动画逻辑 ---
-    st.balloons() # 飞气球
-    st.success("同步成功！各项目连击已独立锁定。") # 弹出绿色成功框
-    time.sleep(1.5) # 给动画留 1.5 秒的表演时间
-    st.rerun() # 之后再刷新，确保下载按钮出现
+    st.balloons()
+    st.success("同步成功！")
+    time.sleep(1.5)
+    st.rerun()
 
 # --- 下载区域 ---
 st.markdown("---")
