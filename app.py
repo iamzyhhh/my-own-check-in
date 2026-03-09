@@ -4,6 +4,32 @@ from datetime import datetime
 import os
 import csv
 import time  # 导入时间模块用于延迟
+import streamlit as st
+import pandas as pd
+from datetime import datetime
+import os
+import csv
+import time
+
+# ================= 1. 新增：开场秀和日期组件 =================
+# st.set_page_config(page_title="独立连击打卡系统", page_icon="🎯") # 如果你代码里有这行，先把它注释掉，移到最上面来
+
+# 获取今天的日期
+today_str = datetime.now().strftime("%Y年%m月%d日")
+
+# 只有第一次打开网页时才放气球 (防止每次提交打卡都重复放)
+if 'first_load' not in st.session_state:
+    st.balloons() # 放飞气球！
+    st.session_state['first_load'] = False # 标记已加载
+    
+    # 显示欢迎文字和日期 (带一点延迟，配合气球动画)
+    with st.container():
+        st.markdown(f"<h1 style='text-align: center; color: #4CAF50;'>🏆 欢迎回来！</h1>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='text-align: center;'>今天是：<span style='color: #FF5722;'>{today_str}</span></h3>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: #757575;'>又是充满活力的一天，准备好接受挑战了吗？</p>", unsafe_allow_html=True)
+        time.sleep(1.5) # 给动画留点表演时间
+        st.rerun() # 自动刷新进入打卡主界面
+
 
 # ================= 配置区域 =================
 DAILY_TASKS = ["数学每日进程", "大英赛每日汉译英", "每日英语单词", "408循环记忆", "vibe coding课程学习"]
