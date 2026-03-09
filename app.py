@@ -54,60 +54,69 @@ if 'quote_data' not in st.session_state:
 # --- 2. 流动感欢迎页面 ---
 if not st.session_state['entered']:
     st.balloons()
+
+
+    # --- 2. 欢迎入场页面 ---
+if not st.session_state['entered']:
+    st.balloons() 
     
-    # 注入自定义 CSS 打造流动感背景
+    # 注入带有动画效果的 CSS
     st.markdown("""
         <style>
+        /* 关键帧动画：从下方 30px 处淡入并上移 */
+        @keyframes customFadeIn {
+            0% { opacity: 0; transform: translateY(30px); filter: blur(5px); }
+            100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+        }
+
+        /* 应用于卡片的动画：持续 2.5 秒，平滑减速 */
         .quote-card {
+            animation: customFadeIn 2.5s cubic-bezier(0.22, 1, 0.36, 1);
             background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
             padding: 40px;
             border-radius: 30px;
             border-left: 8px solid #4CAF50;
             box-shadow: 10px 10px 30px rgba(0,0,0,0.05);
-            transition: all 0.3s ease;
             margin: 20px 0;
         }
-        .quote-text {
-            color: #2c3e50;
-            font-size: 1.5rem;
-            font-family: "Noto Serif SC", serif;
-            line-height: 1.8;
-            margin-bottom: 20px;
-            font-weight: 500;
+
+        /* 让标题和日期也带有不同速度的淡入感，更有层次 */
+        .welcome-title {
+            animation: customFadeIn 1.5s ease-out;
         }
-        .quote-author {
-            color: #7f8c8d;
-            font-size: 1.1rem;
-            text-align: right;
-            font-style: italic;
+        .welcome-date {
+            animation: customFadeIn 2s ease-out;
         }
         </style>
     """, unsafe_allow_html=True)
 
     st.markdown("<br><br>", unsafe_allow_html=True)
-    st.markdown(f"<h1 style='text-align: center; color: #4CAF50;'>🏆 欢迎回来</h1>", unsafe_allow_html=True)
-    st.markdown(f"<h2 style='text-align: center; color: #34495e;'>{today_str}</h2>", unsafe_allow_html=True)
     
-    # 获取拆分后的语录和作者
+    # 使用类名应用动画
+    st.markdown(f"<h1 class='welcome-title' style='text-align: center; color: #4CAF50;'>🏆 欢迎回来</h1>", unsafe_allow_html=True)
+    st.markdown(f"<h2 class='welcome-date' style='text-align: center; color: #34495e;'>{today_str}</h2>", unsafe_allow_html=True)
+    
     content, meta = st.session_state['quote_data']
     
-    # 渲染语录卡片
+    # 卡片现在会慢慢“浮”上来
     st.markdown(f"""
         <div class="quote-card">
-            <div class="quote-text">{content}</div>
-            <div class="quote-author">{meta}</div>
+            <div class="quote-text" style="color: #2c3e50; font-size: 1.5rem; font-family: serif; line-height: 1.8; margin-bottom: 20px; font-weight: 500;">{content}</div>
+            <div class="quote-author" style="color: #7f8c8d; font-size: 1.1rem; text-align: right; font-style: italic;">{meta}</div>
         </div>
     """, unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
     
+    # 按钮保持在原位，但你也可以给它加个微小的延迟感
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
         if st.button("✨ 开启今日挑战", use_container_width=True):
             st.session_state['entered'] = True
             st.rerun()
     st.stop()
-
+    
+   
 # --- 3. 核心功能逻辑 ---
 def get_stats():
     stats = {task: {"streak": 0, "fail": 0, "total": 0} for task in DAILY_TASKS}
