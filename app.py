@@ -19,6 +19,19 @@ BACKUP_QUOTES = [
     "“一个人可以被毁灭，但不能给打败。” —— 海明威《老人与海》"
 ]
 
+#新增记事本功能
+
+def format_log_for_notepads(date, progress, mood, summary):
+    # 这里把你所有的打卡信息拼成一段文字
+    log_content = f"""
+📅 打卡时间: {date}
+📈 今日进度: {progress}
+🌈 今日心情: {mood}
+📝 随笔流水账:
+{summary}
+---------------------------
+"""
+    return log_content
 # --- 新增：统一获取北京时间的函数 ---
 def get_beijing_time():
     tz = pytz.timezone('Asia/Shanghai')
@@ -186,6 +199,7 @@ if not st.session_state['show_summary']:
         st.session_state['show_summary'] = True
         st.rerun()
 
+
 # --- 5. 累计复盘界面 ---
 else:
     st.title("📝 随笔累计")
@@ -195,19 +209,51 @@ else:
     summary_input = st.text_area("追加一段感悟...", height=150)
     
     c_back, c_skip, c_save = st.columns(3)
+    
     with c_back:
         if st.button("⬅️ 返回修改清单"):
             st.session_state['show_summary'] = False
             st.rerun()
+            
     with c_skip:
         if st.button("⏩ 仅更新任务状态"):
             save_dual_format(st.session_state['temp_data'], "", mood)
             st.session_state['show_summary'] = False
             st.rerun()
+            
     with c_save:
-        if st.button("✅ 提交感悟并更新"):
+        # 这个按钮依然负责原本的保存逻辑（存入 CSV 和 MD 文件）
+        if st.button("✅ 提交并准备导出"):
             save_dual_format(st.session_state['temp_data'], summary_input, mood)
-            st.toast("感悟已追加！")
+            st.session_state['ready_to_download'] = True # 标记可以下载了
+            st.toast("数据已同步至服务器文件！")
+
+    # --- 新增：记事本下载区域 ---
+    if st.session_state.get('ready_to_download', False):
+        st.divider()
+        st.success("🎉 本地备份已就绪！")
+        
+        # 调用你代码开头定义的 format_log_for_notepads 函数
+        # 这里的进度数据从 temp_data 的第 2 位（索引 1）获取
+        progress_val = st.session_state['temp_data'][1]
+        note_content = format_log_for_notepads(
+            get_beijing_time().strftime("%Y-%m-%d %H:%M"), 
+            progress_val, 
+            mood, 
+            summary_input
+        )
+        
+        # 核心：显示下载按钮
+        st.download_button(
+            label="💾 点击下载今日记事本 (.txt)",
+            data=note_content,
+            file_name=f"Daily_Log_{get_beijing_time().strftime('%m%d')}.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
+        
+        if st.button("完成并关闭"):
+            st.session_state['ready_to_download'] = False
             st.session_state['show_summary'] = False
             st.rerun()
 
@@ -215,7 +261,6 @@ else:
 with st.sidebar:
     st.header("📂 数据中心")
     if os.path.exists(LOG_FILE):
-        # 下载文件名也带上北京日期
         st.download_button("📊 导出 CSV", open(LOG_FILE, "rb"), f"History_{now_bj.strftime('%m%d')}.csv", "text/csv")
     if os.path.exists(MD_FILE):
         st.download_button("📖 导出 Markdown", open(MD_FILE, "rb"), f"Diary_{now_bj.strftime('%m%d')}.md", "text/markdown")
