@@ -58,7 +58,7 @@ def sync_to_notion(date_title, progress_val, summary_val):
         st.error(f"❌ 还是不行，Notion 报错说：{res.status_code}")
         st.json(res.json()) # 这里的 JSON 信息会告诉我们是 ID 错了还是没权限
     return "done"
-    }
+   
     
     
 
