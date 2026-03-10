@@ -13,7 +13,7 @@ DAILY_TASKS = ["数学每日进程", "大英赛每日汉译英", "每日英语�
 
 # --- 关键：填写你的 Notion 信息 ---
 NOTION_TOKEN = "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"  # 你的 Internal Integration Token
-DATABASE_ID = "20979fe1c9188013ac9e000c8bc7f2aa"   # 你的 Database ID
+DATABASE_ID = "20979fe1c91880c0bc06c67a7a93d174"   # 你的 Database ID
 
 LOG_FILE = "work_history.csv" 
 MD_FILE = "Diary.md"           
