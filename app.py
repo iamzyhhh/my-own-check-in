@@ -19,12 +19,16 @@ BACKUP_QUOTES = [
     "“一个人可以被毁灭，但不能给打败。” —— 海明威《老人与海》"
 ]
 
-# --- 【新增函数：不影响原有逻辑】 ---
+# --- 【修正后的格式化函数：加入仍需努力部分】 ---
 def format_log_for_notepads(date, progress, mood, summary, row_data):
-    # 从 row_data 中提取带图标的已完成任务名
     N = len(DAILY_TASKS)
+    # 提取带图标的已完成任务 (索引 2 到 2+N)
     done_tasks = [t for t in row_data[2:2+N] if t] 
-    tasks_str = "\n".join([f"* {t}" for t in done_tasks]) if done_tasks else "* 今日无达成项目"
+    # 提取带图标的未完成任务 (索引 3+N 之后)
+    todo_tasks = [t for t in row_data[3+N:3+2*N] if t]
+    
+    done_str = "\n".join([f"  * {t}" for t in done_tasks]) if done_tasks else "  * 暂无记录"
+    todo_str = "\n".join([f"  * {t}" for t in todo_tasks]) if todo_tasks else "  * 今日全达成！🎉"
     
     log_content = f"""
 ================================
@@ -33,7 +37,10 @@ def format_log_for_notepads(date, progress, mood, summary, row_data):
 🌈 今日心情: {mood}
 
 🏆 ✅ 荣耀时刻:
-{tasks_str}
+{done_str}
+
+⚠️ ⏳ 仍需努力:
+{todo_str}
 
 📝 随笔流水账:
 {summary if summary else "无感悟内容"}
@@ -50,18 +57,16 @@ def get_beijing_time():
 
 st.set_page_config(page_title="自律成就系统", page_icon="🚀", layout="centered")
 
-# 使用北京时间
 now_bj = get_beijing_time()
 today_date_only = now_bj.strftime("%Y/%m/%d")
 today_full_str = now_bj.strftime("%Y年%m月%d日")
 
-# --- 1. 核心数据保存函数 (原样保留) ---
+# --- 1. 核心数据保存函数 (原封不动) ---
 def save_dual_format(row_data, summary_text="", mood=""):
     N = len(DAILY_TASKS)
     header = ["时间", "进度"] + [f"已完成_{i+1}" for i in range(N)] + ["隔离"] + [f"未完成_{i+1}" for i in range(N)] + ["今日总结"]
     
     all_csv_data = []
-    found_today = False
     accumulated_summary = ""
 
     if os.path.exists(LOG_FILE):
@@ -72,7 +77,6 @@ def save_dual_format(row_data, summary_text="", mood=""):
                     if not row: continue
                     if row[0].startswith(today_date_only):
                         accumulated_summary = row[-1]
-                        found_today = True
                     else:
                         while len(row) < len(header): row.append("")
                         all_csv_data.append(row)
@@ -81,14 +85,12 @@ def save_dual_format(row_data, summary_text="", mood=""):
     new_entry = f"[{now_time} | {mood}] {summary_text}" if summary_text else f"[{now_time} | {mood}]"
     final_summary = f"{accumulated_summary}\n\n{new_entry}" if accumulated_summary else new_entry
     
-    # 这里使用副本防止污染数据
     save_row = row_data.copy()
     save_row.append(final_summary)
     final_csv = [header] + all_csv_data + [save_row]
     with open(LOG_FILE, 'w', newline='', encoding='utf-8-sig') as f:
         csv.writer(f).writerows(final_csv)
 
-    # --- B. 处理 Markdown 逻辑 (原样保留) ---
     done_tasks = [t for t in save_row[2:2+N] if t]
     todo_tasks = [t for t in save_row[3+N:3+2*N] if t]
     
@@ -115,7 +117,7 @@ def save_dual_format(row_data, summary_text="", mood=""):
     with open(MD_FILE, 'w', encoding='utf-8-sig') as f:
         f.write(full_md_content)
 
-# --- 2. 辅助函数 (原样保留) ---
+# --- 2. 辅助函数 (原封不动) ---
 def get_refined_quote():
     try:
         response = requests.get("https://v1.hitokoto.cn/?c=d&c=k&min_length=15&max_length=35", timeout=3)
@@ -151,7 +153,7 @@ def get_stats():
     except: pass
     return stats
 
-# --- 3. 页面状态与欢迎页 (原样保留) ---
+# --- 3. 页面状态与欢迎页 (原封不动) ---
 if 'entered' not in st.session_state: st.session_state['entered'] = False
 if 'quote_data' not in st.session_state: st.session_state['quote_data'] = get_refined_quote()
 if 'show_summary' not in st.session_state: st.session_state['show_summary'] = False
@@ -166,7 +168,7 @@ if not st.session_state['entered']:
         st.rerun()
     st.stop()
 
-# --- 4. 打卡主界面 (原样保留) ---
+# --- 4. 打卡主界面 (原封不动) ---
 if not st.session_state['show_summary']:
     st.title("🎯 进度实时看板")
     stats = get_stats()
@@ -208,11 +210,9 @@ if not st.session_state['show_summary']:
         st.session_state['show_summary'] = True
         st.rerun()
 
-# --- 5. 累计复盘界面 (仅在此处注入了下载逻辑) ---
+# --- 5. 累计复盘界面 (在此处新增导出按钮，逻辑完整捕获未完成项) ---
 else:
     st.title("📝 随笔累计")
-    st.info("💡 这里的总结会按时间顺序追加到今天的手帐中。")
-    
     mood = st.radio("当前心情：", ["😊 动力满满", "😐 正常执行", "😫 稍感疲惫"], horizontal=True)
     summary_input = st.text_area("追加一段感悟...", height=150)
     
@@ -227,21 +227,15 @@ else:
             st.session_state['show_summary'] = False
             st.rerun()
     with c_save:
-        # 这里是唯一变动点：增加了导出记事本的功能展示
         if st.button("✅ 提交感悟并同步"):
-            # A. 先执行你原本所有的保存逻辑（CSV/MD）
             save_dual_format(st.session_state['temp_data'], summary_input, mood)
-            st.toast("云端数据已更新！")
-            
-            # B. 顺便生成记事本内容，供你点击下载
+            st.toast("云端数据已同步！")
             st.session_state['note_ready'] = True
 
-    # 如果点击了提交，就显示下载按钮
     if st.session_state.get('note_ready', False):
         st.divider()
-        st.success("✅ 备份已就绪，请点击下方下载并粘贴至 OneNote：")
+        st.success("✅ 记事本备份已就绪 (包含今日未完成项)：")
         
-        # 使用上面新增的 format 函数，提取 temp_data 里的任务图标
         final_txt = format_log_for_notepads(
             get_beijing_time().strftime("%Y-%m-%d %H:%M"),
             st.session_state['temp_data'][1],
@@ -251,19 +245,19 @@ else:
         )
         
         st.download_button(
-            label="💾 下载今日荣耀记录 (.txt)",
+            label="💾 下载完整荣耀记录 (.txt)",
             data=final_txt,
-            file_name=f"Study_Note_{now_bj.strftime('%m%d')}.txt",
+            file_name=f"Daily_Record_{now_bj.strftime('%m%d')}.txt",
             mime="text/plain",
             use_container_width=True
         )
         
-        if st.button("完成打卡并返回主页"):
+        if st.button("打卡流程结束"):
             st.session_state['note_ready'] = False
             st.session_state['show_summary'] = False
             st.rerun()
 
-# --- 6. 侧边栏 (原样保留) ---
+# --- 6. 侧边栏 (原封不动) ---
 with st.sidebar:
     st.header("📂 数据中心")
     if os.path.exists(LOG_FILE):
