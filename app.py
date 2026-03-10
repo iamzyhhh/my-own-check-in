@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 
 # 填入你的信息
-TOKEN = "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"
+TOKEN = "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"
 DB_ID = "20979fe1c91880e4b060c95b76564c88"
 
 st.title("🧪 Notion 连通性暴力测试")
