@@ -110,14 +110,16 @@ def save_dual_format(row_data, summary_text="", mood=""):
     # B. 保存 Markdown (略，保持你之前的逻辑)
     # ... (之前的 Markdown 覆盖逻辑代码)
 
-    # C. 同步到 Notion
-    if NOTION_TOKEN.startswith("secret_"):
-        status = sync_to_notion(today_date_only, row_data[1], final_summary)
-        if "error" not in status:
-            st.toast(f"✅ Notion 同步成功 ({status})")
-        else:
-            st.error(f"Notion 同步失败: {status}")
-
+  # 修改代码中的同步部分
+if NOTION_TOKEN.startswith("secret_"):
+    status = sync_to_notion(today_date_only, row_data[1], final_summary)
+    if "error" not in status:
+        st.success(f"✅ Notion 已同步！状态: {status}") # 改成 success 醒目一点
+    else:
+        # 这一行会直接告诉你 Notion 拒绝你的原因
+        st.error(f"❌ 报错了！具体原因: {status}") 
+        # 顺便把你的 ID 打印出来，你自己核对下
+        st.write(f"当前使用的 ID 是: {DATABASE_ID}")
 # --- 2. 语录 & 统计 (保持不变) ---
 def get_refined_quote():
     try:
