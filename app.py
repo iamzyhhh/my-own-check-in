@@ -6,6 +6,7 @@ import csv
 import time
 import random
 import requests
+import pytz  # 新增：用于处理时区
 
 # ================= 配置区域 =================
 DAILY_TASKS = ["数学每日进程", "大英赛每日汉译英", "每日英语单词", "408循环记忆", "vibe coding课程学习"]
@@ -17,14 +18,22 @@ BACKUP_QUOTES = [
     "“满地都是六便士，他却抬头看见了月亮。” —— 毛姆《月亮与六便士》",
     "“一个人可以被毁灭，但不能给打败。” —— 海明威《老人与海》"
 ]
+
+# --- 新增：统一获取北京时间的函数 ---
+def get_beijing_time():
+    tz = pytz.timezone('Asia/Shanghai')
+    return datetime.now(tz)
+
 # ===========================================
 
 st.set_page_config(page_title="自律成就系统", page_icon="🎯", layout="centered")
 
-today_date_only = datetime.now().strftime("%Y/%m/%d")
-today_full_str = datetime.now().strftime("%Y年%m月%d日")
+# 使用北京时间
+now_bj = get_beijing_time()
+today_date_only = now_bj.strftime("%Y/%m/%d")
+today_full_str = now_bj.strftime("%Y年%m月%d日")
 
-# --- 1. 核心数据保存函数 (任务覆盖 + 总结累计) ---
+# --- 1. 核心数据保存函数 ---
 def save_dual_format(row_data, summary_text="", mood=""):
     N = len(DAILY_TASKS)
     header = ["时间", "进度"] + [f"已完成_{i+1}" for i in range(N)] + ["隔离"] + [f"未完成_{i+1}" for i in range(N)] + ["今日总结"]
@@ -33,7 +42,6 @@ def save_dual_format(row_data, summary_text="", mood=""):
     found_today = False
     accumulated_summary = ""
 
-    # --- A. 处理 CSV 逻辑 ---
     if os.path.exists(LOG_FILE):
         with open(LOG_FILE, 'r', encoding='utf-8-sig') as f:
             reader = list(csv.reader(f))
@@ -41,18 +49,15 @@ def save_dual_format(row_data, summary_text="", mood=""):
                 for row in reader[1:]:
                     if not row: continue
                     if row[0].startswith(today_date_only):
-                        # 提取旧的累计总结
                         accumulated_summary = row[-1]
                         found_today = True
                     else:
                         while len(row) < len(header): row.append("")
                         all_csv_data.append(row)
 
-    # 关键：总结部分采用累加模式
-    now_time = datetime.now().strftime("%H:%M")
+    # 使用北京时间的时间戳
+    now_time = get_beijing_time().strftime("%H:%M")
     new_entry = f"[{now_time} | {mood}] {summary_text}" if summary_text else f"[{now_time} | {mood}]"
-    
-    # 将新感悟追加到旧感悟之后
     final_summary = f"{accumulated_summary}\n\n{new_entry}" if accumulated_summary else new_entry
     
     row_data.append(final_summary)
@@ -64,7 +69,6 @@ def save_dual_format(row_data, summary_text="", mood=""):
     done_tasks = [t for t in row_data[2:2+N] if t]
     todo_tasks = [t for t in row_data[3+N:3+2*N] if t]
     
-    # 构造 Markdown 块：任务是覆盖的，随笔是累计的
     new_md_block = f"## 📅 {today_full_str}\n"
     new_md_block += f"**📊 最新完成度：{row_data[1]}**\n\n"
     new_md_block += "### ✅ 荣耀时刻\n" + ("\n".join([f"* {t}" for t in done_tasks]) if done_tasks else "* 暂无记录") + "\n\n"
@@ -75,7 +79,6 @@ def save_dual_format(row_data, summary_text="", mood=""):
     if os.path.exists(MD_FILE):
         with open(MD_FILE, 'r', encoding='utf-8-sig') as f:
             old_content = f.read()
-            # 找到历史天数的记录（排除掉今天的旧块）
             if f"## 📅 {today_full_str}" in old_content:
                 parts = old_content.split("---")
                 other_days = [p.strip() for p in parts if f"## 📅 {today_full_str}" not in p and "# 📖" not in p and p.strip()]
@@ -89,7 +92,7 @@ def save_dual_format(row_data, summary_text="", mood=""):
     with open(MD_FILE, 'w', encoding='utf-8-sig') as f:
         f.write(full_md_content)
 
-# --- 2. 辅助函数 (语录 & 统计) ---
+# --- 2. 辅助函数 ---
 def get_refined_quote():
     try:
         response = requests.get("https://v1.hitokoto.cn/?c=d&c=k&min_length=15&max_length=35", timeout=3)
@@ -158,9 +161,9 @@ if not st.session_state['show_summary']:
     if st.button("🚀 提交/更新今日状态", use_container_width=True):
         todo_list = [t for t in DAILY_TASKS if t not in done_list]
         N = len(DAILY_TASKS)
-        new_row = [datetime.now().strftime("%Y/%m/%d %H:%M"), f"{(len(done_list)/N*100):.0f}%"]
+        # 这里也改用北京时间
+        new_row = [get_beijing_time().strftime("%Y/%m/%d %H:%M"), f"{(len(done_list)/N*100):.0f}%"]
         
-        # 记录荣耀
         sorted_done = sorted(done_list, key=lambda x: stats[x]['streak'], reverse=True)
         for i in range(N):
             if i < len(sorted_done):
@@ -171,7 +174,6 @@ if not st.session_state['show_summary']:
             else: new_row.append("")
         new_row.append(">>>")
         
-        # 记录未达标
         sorted_todo = sorted(todo_list, key=lambda x: stats[x]['fail'], reverse=True)
         for i in range(N):
             if i < len(sorted_todo):
@@ -213,8 +215,9 @@ else:
 with st.sidebar:
     st.header("📂 数据中心")
     if os.path.exists(LOG_FILE):
-        st.download_button("📊 导出 CSV", open(LOG_FILE, "rb"), "History.csv", "text/csv")
+        # 下载文件名也带上北京日期
+        st.download_button("📊 导出 CSV", open(LOG_FILE, "rb"), f"History_{now_bj.strftime('%m%d')}.csv", "text/csv")
     if os.path.exists(MD_FILE):
-        st.download_button("📖 导出 Markdown", open(MD_FILE, "rb"), "Diary.md", "text/markdown")
+        st.download_button("📖 导出 Markdown", open(MD_FILE, "rb"), f"Diary_{now_bj.strftime('%m%d')}.md", "text/markdown")
     st.divider()
     st.write("🏃 **坚持就是胜利！**")
