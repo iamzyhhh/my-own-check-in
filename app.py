@@ -11,7 +11,7 @@ test_msg = st.text_input("随便写点什么测试：", "Hello Notion!")
 
 if st.button("🚀 点击强行发送"):
     headers = {
-        "Authorization": f"Bearer {TOKEN}",
+        "Authorization": f"Bearer {NOTION_TOKEN}",
         "Content-Type": "application/json",
         "Notion-Version": "2022-06-28"
     }
