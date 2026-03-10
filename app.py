@@ -51,12 +51,15 @@ def sync_to_notion(date_title, progress_val, summary_val):
     }
     res = requests.post(create_url, headers=headers, json=new_page)
     
-    # 这一段能抓出所有错误
     if res.status_code == 200:
-        st.success(f"🎉 真的成功了！请刷新 Notion 页面底部查看。")
+        data = res.json()
+        # --- 这里的逻辑会帮你瞬间定位 ---
+        notion_url = data.get("url")
+        st.success("🎉 数据发送成功！")
+        st.markdown(f"👉 [点击这里直接打开 Notion 里的这条数据]({notion_url})")
     else:
-        st.error(f"❌ 还是不行，Notion 报错说：{res.status_code}")
-        st.json(res.json()) # 这里的 JSON 信息会告诉我们是 ID 错了还是没权限
+        st.error(f"❌ 还是不行，错误码: {res.status_code}")
+        st.json(res.json())
     return "done"
    
     
