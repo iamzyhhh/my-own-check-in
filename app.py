@@ -12,7 +12,6 @@ DAILY_TASKS = ["数学每日进程", "大英赛每日汉译英", "每日英语�
 LOG_FILE = "my_study_log.csv"
 
 BACKUP_QUOTES = [
-    "“人生的磨难是很多的，所以我们不可对于每一件轻微的伤害都过于敏感。” —— 勃朗特《简·爱》",
     "“在大雪封闭了所有出路时刻，我们要练习在冰封的土地上跳舞。” —— 余秀华",
     "“满地都是六便士，他却抬头看见了月亮。” —— 毛姆《月亮与六便士》",
     "“一个人可以被毁灭，但不能给打败。” —— 海明威《老人与海》"
@@ -20,11 +19,13 @@ BACKUP_QUOTES = [
 # ===========================================
 
 st.set_page_config(page_title="自律成就系统", page_icon="🎯", layout="centered")
-today_str = datetime.now().strftime("%Y年%m月%d日")
+today_date_only = datetime.now().strftime("%Y/%m/%d")
+today_full_str = datetime.now().strftime("%Y年%m月%d日")
 
-# --- 联网获取语录 ---
+# --- 联网获取文学语录 ---
 def get_refined_quote():
     try:
+        # 筛选文学和哲学类，长度20字左右
         response = requests.get("https://v1.hitokoto.cn/?c=d&c=k&min_length=15&max_length=35", timeout=3)
         if response.status_code == 200:
             data = response.json()
@@ -35,65 +36,66 @@ def get_refined_quote():
     parts = q.split(" —— ")
     return parts[0], parts[1]
 
+# --- 核心保存逻辑（日期去重版） ---
+def save_to_csv(row_data, summary_text="", mood=""):
+    # 组合总结内容：[心情图标] 总结文字
+    final_summary = f"[{mood}] {summary_text}" if mood else summary_text
+    row_data.append(final_summary)
+    
+    N = len(DAILY_TASKS)
+    header = ["时间", "进度"] + [f"已完成_{i+1}" for i in range(N)] + ["隔离"] + [f"未完成_{i+1}" for i in range(N)] + ["今日总结"]
+    
+    all_data = []
+    found_today = False
+    
+    if os.path.exists(LOG_FILE):
+        with open(LOG_FILE, 'r', encoding='utf-8-sig') as f:
+            reader = list(csv.reader(f))
+            if len(reader) > 0:
+                all_data.append(header)
+                for row in reader[1:]:
+                    if not row: continue
+                    # 检查是否是今天（按日期覆盖）
+                    if row[0].startswith(today_date_only):
+                        all_data.append(row_data)
+                        found_today = True
+                    else:
+                        while len(row) < len(header): row.append("")
+                        all_data.append(row)
+    
+    if not found_today:
+        if not all_data: all_data.append(header)
+        all_data.append(row_data)
+
+    with open(LOG_FILE, 'w', newline='', encoding='utf-8-sig') as f:
+        csv.writer(f).writerows(all_data)
+
 # --- 状态管理 ---
 if 'entered' not in st.session_state: st.session_state['entered'] = False
 if 'quote_data' not in st.session_state: st.session_state['quote_data'] = get_refined_quote()
 if 'show_summary' not in st.session_state: st.session_state['show_summary'] = False
 if 'temp_data' not in st.session_state: st.session_state['temp_data'] = None
 
-# --- 2. 欢迎入场页面 ---
+# --- 欢迎页面（CSS淡入动画方案二） ---
 if not st.session_state['entered']:
-    st.balloons() 
-    
-    # 注入带有动画效果的 CSS
+    st.balloons()
     st.markdown("""
         <style>
-        /* 关键帧动画：从下方 30px 处淡入并上移 */
-        @keyframes customFadeIn {
-            0% { opacity: 0; transform: translateY(30px); filter: blur(5px); }
-            100% { opacity: 1; transform: translateY(0); filter: blur(0); }
-        }
-
-        /* 应用于卡片的动画：持续 2.5 秒，平滑减速 */
+        @keyframes customFadeIn { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: translateY(0); } }
         .quote-card {
-            animation: customFadeIn 2.5s cubic-bezier(0.22, 1, 0.36, 1);
+            animation: customFadeIn 2.5s ease-out;
             background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
-            padding: 40px;
-            border-radius: 30px;
-            border-left: 8px solid #4CAF50;
-            box-shadow: 10px 10px 30px rgba(0,0,0,0.05);
-            margin: 20px 0;
+            padding: 40px; border-radius: 30px; border-left: 8px solid #4CAF50;
+            box-shadow: 10px 10px 30px rgba(0,0,0,0.05); margin: 20px 0;
         }
-
-        /* 让标题和日期也带有不同速度的淡入感，更有层次 */
-        .welcome-title {
-            animation: customFadeIn 1.5s ease-out;
-        }
-        .welcome-date {
-            animation: customFadeIn 2s ease-out;
-        }
+        .welcome-title { animation: customFadeIn 1.5s ease-out; }
         </style>
     """, unsafe_allow_html=True)
-
     st.markdown("<br><br>", unsafe_allow_html=True)
-    
-    # 使用类名应用动画
     st.markdown(f"<h1 class='welcome-title' style='text-align: center; color: #4CAF50;'>🏆 欢迎回来</h1>", unsafe_allow_html=True)
-    st.markdown(f"<h2 class='welcome-date' style='text-align: center; color: #34495e;'>{today_str}</h2>", unsafe_allow_html=True)
-    
+    st.markdown(f"<h2 style='text-align: center; color: #34495e;'>{today_full_str}</h2>", unsafe_allow_html=True)
     content, meta = st.session_state['quote_data']
-    
-    # 卡片现在会慢慢“浮”上来
-    st.markdown(f"""
-        <div class="quote-card">
-            <div class="quote-text" style="color: #2c3e50; font-size: 1.5rem; font-family: serif; line-height: 1.8; margin-bottom: 20px; font-weight: 500;">{content}</div>
-            <div class="quote-author" style="color: #7f8c8d; font-size: 1.1rem; text-align: right; font-style: italic;">{meta}</div>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # 按钮保持在原位，但你也可以给它加个微小的延迟感
+    st.markdown(f"<div class='quote-card'><div style='font-size:1.5rem; font-family:serif; line-height:1.8;'>{content}</div><div style='text-align:right; font-style:italic; color:#7f8c8d;'>{meta}</div></div>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
         if st.button("✨ 开启今日挑战", use_container_width=True):
@@ -101,7 +103,7 @@ if not st.session_state['entered']:
             st.rerun()
     st.stop()
 
-# --- 核心功能逻辑 ---
+# --- 核心统计逻辑 ---
 def get_stats():
     stats = {task: {"streak": 0, "fail": 0, "total": 0} for task in DAILY_TASKS}
     if not os.path.exists(LOG_FILE): return stats
@@ -130,53 +132,31 @@ def get_stats():
     except: pass
     return stats
 
-def save_to_csv(row_data, summary_text=""):
-    # 在行末尾追加总结
-    row_data.append(summary_text)
-    
-    N = len(DAILY_TASKS)
-    header = ["时间", "进度"] + [f"已完成_{i+1}" for i in range(N)] + ["隔离"] + [f"未完成_{i+1}" for i in range(N)] + ["今日总结"]
-    
-    all_data = [header]
-    if os.path.exists(LOG_FILE):
-        with open(LOG_FILE, 'r', encoding='utf-8-sig') as f:
-            old_rows = list(csv.reader(f))
-            for row in old_rows[1:]:
-                if not row or len(row) < 2: continue
-                # 保持旧数据的列数对齐
-                while len(row) < len(header): row.append("")
-                all_data.append(row)
-    
-    all_data.append(row_data)
-    with open(LOG_FILE, 'w', newline='', encoding='utf-8-sig') as f:
-        csv.writer(f).writerows(all_data)
-
-# --- 主界面 ---
+# --- 打卡主界面 ---
 if not st.session_state['show_summary']:
     st.title("🎯 我的成就系统")
     stats = get_stats()
     done_list = []
-    st.subheader("今日任务")
+    st.subheader("今日任务清单")
     for task in DAILY_TASKS:
         s, f = stats[task]['streak'], stats[task]['fail']
         badge = f"🔥{s}d" if s > 0 else (f"❌{f}d" if f > 0 else "🆕")
-        col1, col2 = st.columns([3, 1])
-        with col1:
+        c1, c2 = st.columns([3, 1])
+        with c1:
             if st.checkbox(f"{task}", key=task): done_list.append(task)
-        with col2: st.write(f"{badge}")
+        with c2: st.write(f"{badge}")
 
-    if st.button("🚀 准备提交", use_container_width=True):
-        # 预计算数据
+    if st.button("🚀 准备提交今日成果", use_container_width=True):
         todo_list = [t for t in DAILY_TASKS if t not in done_list]
         N = len(DAILY_TASKS)
         date_str = datetime.now().strftime("%Y/%m/%d %H:%M")
         new_row = [date_str, f"{(len(done_list)/N*100):.0f}%"]
         
+        # 计算荣耀/追责榜
         sorted_done = sorted(done_list, key=lambda x: stats[x]['streak'], reverse=True)
         for i in range(N):
             if i < len(sorted_done):
-                t = sorted_done[i]
-                d = 1 if stats[t]['fail'] > 0 else stats[t]['streak'] + 1
+                t = sorted_done[i]; d = 1 if stats[t]['fail'] > 0 else stats[t]['streak'] + 1
                 icon = "👑" if d > 7 else ("✨" if d > 3 else "🔥")
                 new_row.append(f"{icon}{d}/{stats[t]['total'] + 1}d {t}")
             else: new_row.append("")
@@ -184,41 +164,48 @@ if not st.session_state['show_summary']:
         sorted_todo = sorted(todo_list, key=lambda x: stats[x]['fail'], reverse=True)
         for i in range(N):
             if i < len(sorted_todo):
-                t = sorted_todo[i]
-                f = 1 if stats[t]['streak'] > 0 else stats[t]['fail'] + 1
+                t = sorted_todo[i]; f = 1 if stats[t]['streak'] > 0 else stats[t]['fail'] + 1
                 new_row.append(f"❌{f}d {t}")
             else: new_row.append("")
-            
+        
         st.session_state['temp_data'] = new_row
         st.session_state['show_summary'] = True
         st.rerun()
 
-# --- 总结与最终提交界面 ---
+# --- 总结界面（带心情选择与美化） ---
 else:
-    st.title("📝 今日复盘")
-    st.info("任务已记录！是否需要为今天写下一点感悟？")
+    st.title("📝 今日复盘 · 随笔")
+    st.markdown("""<style>.summary-box { background-color: #fffbef; padding: 25px; border-radius: 15px; border: 1px dashed #d4af37; box-shadow: 5px 5px 15px rgba(0,0,0,0.05); }</style>""", unsafe_allow_html=True)
     
-    summary_input = st.text_area("输入总结内容（可选）：", placeholder="今天学到了什么？有什么想对自己说的？", height=150)
+    # 1. 心情选择
+    st.subheader("今日状态")
+    mood_choice = st.radio(
+        "选择今天的心情标签：",
+        ["😊 状态拉满，高效一天", "😐 平平淡淡，贵在坚持", "😫 累但挺住了，明天继续"],
+        horizontal=True
+    )
     
-    c1, c2 = st.columns(2)
-    with c1:
-        if st.button("✅ 完成总结并提交", use_container_width=True):
-            save_to_csv(st.session_state['temp_data'], summary_input)
+    # 2. 总结输入
+    st.markdown('<div class="summary-box">', unsafe_allow_html=True)
+    summary_input = st.text_area("“回首今日，有哪些收获或遗憾？”", placeholder="在这里写下你的感悟...", height=200)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    col_a, col_b = st.columns(2)
+    with col_a:
+        if st.button("✅ 封存今日回忆", use_container_width=True):
+            save_to_csv(st.session_state['temp_data'], summary_input, mood_choice)
             st.balloons()
-            st.success("日志已同步！")
-            time.sleep(1.5)
-            # 重置状态
+            st.toast("今日日志已装裱存入！")
+            time.sleep(2)
             st.session_state['show_summary'] = False
-            st.session_state['temp_data'] = None
             st.rerun()
-    with c2:
-        if st.button("⏩ 跳过总结，直接提交", use_container_width=True):
-            save_to_csv(st.session_state['temp_data'], "")
-            st.success("打卡已同步！")
-            time.sleep(1)
+    with col_b:
+        if st.button("⏩ 下次再写", use_container_width=True):
+            save_to_csv(st.session_state['temp_data'], "", mood_choice)
             st.session_state['show_summary'] = False
-            st.session_state['temp_data'] = None
             st.rerun()
+    st.stop()
 
 # --- 下载区域 ---
 st.markdown("---")
