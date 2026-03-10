@@ -40,42 +40,27 @@ def sync_to_notion(date_title, progress_val, summary_val):
         "Content-Type": "application/json",
         "Notion-Version": "2022-06-28"
     }
-    
-    # 1. 查询当天是否已存在记录
-    query_url = f"https://api.notion.com/v1/databases/{DATABASE_ID}/query"
-    query_data = {
-        "filter": { "property": "Name", "title": { "equals": date_title } }
-    }
-    
-    try:
-        res = requests.post(query_url, headers=headers, json=query_data)
-        results = res.json().get("results", [])
-        
-        props = {
+    create_url = "https://api.notion.com/v1/pages"
+    new_page = {
+        "parent": { "database_id": DATABASE_ID },
+        "properties": {
+            "Name": { "title": [{"text": {"content": date_title}}] },
             "进度": { "rich_text": [{"text": {"content": progress_val}}] },
             "随笔流水账": { "rich_text": [{"text": {"content": summary_val}}] }
         }
-
-        if results:
-            # 2. 如果已存在，执行更新 (PATCH)
-            page_id = results[0]["id"]
-            update_url = f"https://api.notion.com/v1/pages/{page_id}"
-            requests.patch(update_url, headers=headers, json={"properties": props})
-            return "updated"
-        else:
-            # 3. 如果不存在，执行新建 (POST)
-            create_url = "https://api.notion.com/v1/pages"
-            new_page = {
-                "parent": { "database_id": DATABASE_ID },
-                "properties": {
-                    "Name": { "title": [{"text": {"content": date_title}}] },
-                    **props
-                }
-            }
-            requests.post(create_url, headers=headers, json=new_page)
-            return "created"
-    except Exception as e:
-        return f"error: {str(e)}"
+    }
+    res = requests.post(create_url, headers=headers, json=new_page)
+    
+    # 这一段能抓出所有错误
+    if res.status_code == 200:
+        st.success(f"🎉 真的成功了！请刷新 Notion 页面底部查看。")
+    else:
+        st.error(f"❌ 还是不行，Notion 报错说：{res.status_code}")
+        st.json(res.json()) # 这里的 JSON 信息会告诉我们是 ID 错了还是没权限
+    return "done"
+    }
+    
+    
 
 # --- 1. 核心数据保存函数 (CSV + Markdown + Notion) ---
 def save_dual_format(row_data, summary_text="", mood=""):
