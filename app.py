@@ -173,6 +173,7 @@ if not st.session_state['show_summary']:
         st.rerun()
 
 # --- 总结界面（带心情选择与美化） ---
+# --- 总结界面（带心情选择与返回功能） ---
 else:
     st.title("📝 今日复盘 · 随笔")
     st.markdown("""<style>.summary-box { background-color: #fffbef; padding: 25px; border-radius: 15px; border: 1px dashed #d4af37; box-shadow: 5px 5px 15px rgba(0,0,0,0.05); }</style>""", unsafe_allow_html=True)
@@ -191,20 +192,32 @@ else:
     st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
-    col_a, col_b = st.columns(2)
-    with col_a:
-        if st.button("✅ 封存今日回忆", use_container_width=True):
+    
+    # --- 按钮区域：改为三列布局 ---
+    col_back, col_skip, col_save = st.columns([1, 1, 1])
+    
+    with col_back:
+        if st.button("⬅️ 返回修改", use_container_width=True):
+            # 关闭总结界面开关，清空临时数据，跳回主界面
+            st.session_state['show_summary'] = False
+            st.session_state['temp_data'] = None
+            st.rerun()
+
+    with col_skip:
+        if st.button("⏩ 下次再写", use_container_width=True):
+            save_to_csv(st.session_state['temp_data'], "", mood_choice)
+            st.session_state['show_summary'] = False
+            st.rerun()
+
+    with col_save:
+        if st.button("✅ 封存回忆", use_container_width=True):
             save_to_csv(st.session_state['temp_data'], summary_input, mood_choice)
             st.balloons()
             st.toast("今日日志已装裱存入！")
             time.sleep(2)
             st.session_state['show_summary'] = False
             st.rerun()
-    with col_b:
-        if st.button("⏩ 下次再写", use_container_width=True):
-            save_to_csv(st.session_state['temp_data'], "", mood_choice)
-            st.session_state['show_summary'] = False
-            st.rerun()
+            
     st.stop()
 
 # --- 下载区域 ---
