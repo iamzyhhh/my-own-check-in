@@ -27,6 +27,8 @@ def format_log_for_notepads(date, progress, mood, summary):
 📅 打卡时间: {date}
 📈 今日进度: {progress}
 🌈 今日心情: {mood}
+🏆 ✅ 荣耀时刻 (已完成项目):
+{tasks_str}
 📝 随笔流水账:
 {summary}
 ---------------------------
