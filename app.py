@@ -16,7 +16,7 @@ if st.button("🚀 点击强行发送"):
         "Notion-Version": "2022-06-28"
     }
     data = {
-        "parent": { "database_id": DB_ID },
+        "parent": { "database_id": DATABASE_ID },
         "properties": {
             "Name": { "title": [{"text": {"content": test_msg}}] }
         }
