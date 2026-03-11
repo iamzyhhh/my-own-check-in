@@ -156,6 +156,26 @@ def get_refined_quote():
     return q[0], q[1]
 
 def get_stats():
+    def get_total_days():
+    if not os.path.exists(LOG_FILE):
+        return 0
+
+    try:
+        df = pd.read_csv(LOG_FILE, encoding='utf-8-sig')
+
+        if df.empty:
+            return 0
+
+        # 只取日期部分
+        dates = df["时间"].astype(str).str[:10]
+
+        # 去重
+        unique_days = dates.nunique()
+
+        return unique_days
+
+    except:
+        return 0
     stats = {task: {"streak": 0, "fail": 0, "total": 0} for task in DAILY_TASKS}
     if not os.path.exists(LOG_FILE): return stats
     try:
@@ -207,6 +227,8 @@ if not st.session_state['entered']:
 # --- 4. 打卡主界面 (原封不动) ---
 if not st.session_state['show_summary']:
     st.title("🎯 进度实时看板")
+    total_days = get_total_days()
+st.info(f"🏆 你已经坚持了 **{total_days} 天**！继续保持 🚀")
     
     # ✨ 新增：在标题下显示实时北京时间
     st.markdown(f"🕒 **北京时间：{get_beijing_time().strftime('%Y-%m-%d %H:%M:%S')}**")
