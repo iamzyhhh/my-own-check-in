@@ -185,9 +185,17 @@ if 'entered' not in st.session_state: st.session_state['entered'] = False
 if 'quote_data' not in st.session_state: st.session_state['quote_data'] = get_refined_quote()
 if 'show_summary' not in st.session_state: st.session_state['show_summary'] = False
 
+
+    # --- 3. 页面状态与欢迎页 ---
 if not st.session_state['entered']:
     st.balloons()
     st.markdown("<h1 style='text-align: center; color: #4CAF50;'>🏆 欢迎回来</h1>", unsafe_allow_html=True)
+    
+    # ✨ 这里的欢迎语，每次打开网页第一眼就能看到
+    st.markdown("<h5 style='text-align: center;'>欢迎回来，新的机遇与挑战正在等着你 ✨</h5>", unsafe_allow_html=True)
+     # ✨ 新增：在标题下显示实时北京时间
+    st.markdown(f"🕒 **北京时间：{get_beijing_time().strftime('%Y-%m-%d %H:%M:%S')}**")
+    #引用网站语句
     content, meta = st.session_state['quote_data']
     st.markdown(f"<div style='background: #f9f9f9; padding: 30px; border-left: 8px solid #4CAF50; border-radius: 10px; margin: 20px 0;'><h3>{content}</h3><p style='text-align:right;'>{meta}</p></div>", unsafe_allow_html=True)
     if st.button("✨ 开启今日挑战", use_container_width=True):
@@ -204,7 +212,7 @@ if not st.session_state['show_summary']:
     st.markdown(f"🕒 **北京时间：{get_beijing_time().strftime('%Y-%m-%d %H:%M:%S')}**")
    
     #新增一行字
-    st.markdown("##### 欢迎回来，新的机遇与挑战正在等着你 ✨")
+    st.markdown("##### 要记录些什么吗？天天开心哦 😄")
     st.divider()
     stats = get_stats()
     done_list = []
