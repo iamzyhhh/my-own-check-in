@@ -238,8 +238,6 @@ if not st.session_state['show_summary']:
     total_days = get_total_days()
 st.info(f"🏆 你已经坚持了 **{total_days} 天**！继续保持 🚀")
     
-    # ✨ 新增：在标题下显示实时北京时间
-    st.markdown(f"🕒 **北京时间：{get_beijing_time().strftime('%Y-%m-%d %H:%M:%S')}**")
    
     #新增一行字
     st.markdown("##### 要记录些什么吗？天天开心哦 😄")
