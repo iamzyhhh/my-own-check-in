@@ -195,14 +195,17 @@ if not st.session_state['entered']:
         st.rerun()
     st.stop()
 
-st.markdown(
-f"<p style='font-size:18px;color:gray;'>🕒 {get_beijing_time().strftime('%Y-%m-%d %H:%M')}</p>",
-unsafe_allow_html=True
-)
 
 # --- 4. 打卡主界面 (原封不动) ---
 if not st.session_state['show_summary']:
     st.title("🎯 进度实时看板")
+    
+    # ✨ 新增：在标题下显示实时北京时间
+    st.markdown(f"🕒 **北京时间：{get_beijing_time().strftime('%Y-%m-%d %H:%M:%S')}**")
+   
+    #新增一行字
+    st.markdown("##### 欢迎回来，新的机遇与挑战正在等着你 ✨")
+    st.divider()
     stats = get_stats()
     done_list = []
     
