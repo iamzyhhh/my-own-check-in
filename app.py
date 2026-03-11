@@ -156,26 +156,6 @@ def get_refined_quote():
     return q[0], q[1]
 
 def get_stats():
-    def get_total_days():
-    if not os.path.exists(LOG_FILE):
-        return 0
-
-    try:
-        df = pd.read_csv(LOG_FILE, encoding='utf-8-sig')
-
-        if df.empty:
-            return 0
-
-        # 只取日期部分
-        dates = df["时间"].astype(str).str[:10]
-
-        # 去重
-        unique_days = dates.nunique()
-
-        return unique_days
-
-    except:
-        return 0
     stats = {task: {"streak": 0, "fail": 0, "total": 0} for task in DAILY_TASKS}
     if not os.path.exists(LOG_FILE): return stats
     try:
@@ -206,18 +186,46 @@ if 'quote_data' not in st.session_state: st.session_state['quote_data'] = get_re
 if 'show_summary' not in st.session_state: st.session_state['show_summary'] = False
 
 
-    # --- 3. 页面状态与欢迎页 ---
+ # --- 3. 页面状态与欢迎页 ---
 if not st.session_state['entered']:
     st.balloons()
-    st.markdown("<h1 style='text-align: center; color: #4CAF50;'>🏆 欢迎回来</h1>", unsafe_allow_html=True)
     
-    # ✨ 这里的欢迎语，每次打开网页第一眼就能看到
-    st.markdown("<h5 style='text-align: center;'>欢迎回来，新的机遇与挑战正在等着你 ✨</h5>", unsafe_allow_html=True)
-     # ✨ 新增：在标题下显示实时北京时间
+    # 计算累计天数（按日期去重）
+    total_days = 0
+    if os.path.exists(LOG_FILE):
+        try:
+            df_count = pd.read_csv(LOG_FILE, encoding='utf-8-sig')
+            if not df_count.empty:
+                # 提取日期部分（前10位），去重统计
+                total_days = df_count[df_count.columns[0]].str[:10].nunique()
+        except:
+            total_days = 0
+
+    # 1. 大标题
+    st.markdown("<h1 style='text-align: center; color: #4CAF50;'>🏆 欢迎回来</h1>", unsafe_allow_html=True)
+
+     # 2. 激励语
+    st.markdown("<p style='text-align: center; color: #888; font-style: italic;'>欢迎回来，新的机遇与挑战正在等着你 ✨</p>", unsafe_allow_html=True)
+    
+    # ✨ 新增：在标题下显示实时北京时间
     st.markdown(f"🕒 **北京时间：{get_beijing_time().strftime('%Y-%m-%d %H:%M:%S')}**")
-    #引用网站语句
+    
+    # 3. 累计天数显示（大号醒目字体）
+    st.markdown(f"""
+        <div style='text-align: center; margin-bottom: 10px;'>
+            <span style='font-size: 20px; color: #666;'>已累计坚持</span>
+            <span style='font-size: 36px; font-weight: bold; color: #4CAF50; margin: 0 10px;'>{total_days}</span>
+            <span style='font-size: 20px; color: #666;'>天</span>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # 3. 激励语
+    st.markdown("<p style='text-align: center; color: #888; font-style: italic;'>欢迎回来，新的机遇与挑战正在等着你 ✨</p>", unsafe_allow_html=True)
+    
+    # 4. 随机金句卡片
     content, meta = st.session_state['quote_data']
     st.markdown(f"<div style='background: #f9f9f9; padding: 30px; border-left: 8px solid #4CAF50; border-radius: 10px; margin: 20px 0;'><h3>{content}</h3><p style='text-align:right;'>{meta}</p></div>", unsafe_allow_html=True)
+    
     if st.button("✨ 开启今日挑战", use_container_width=True):
         st.session_state['entered'] = True
         st.rerun()
@@ -322,12 +330,34 @@ else:
             st.session_state['show_summary'] = False
             st.rerun()
 
-# --- 6. 侧边栏 (原封不动) ---
+# --- 6. 侧边栏 ---
 with st.sidebar:
     st.header("📂 数据中心")
+    
+    # ✨ 新增：累计打卡天数统计
+    if os.path.exists(LOG_FILE):
+        try:
+            df_sidebar = pd.read_csv(LOG_FILE, encoding='utf-8-sig')
+            if not df_sidebar.empty:
+                # 提取“时间”列的前 10 位（即 YYYY/MM/DD），然后去重统计数量
+                total_days = df_sidebar[df_sidebar.columns[0]].str[:10].nunique()
+                
+                # 美化显示
+                st.markdown(f"""
+                <div style='background: #f0f2f6; padding: 15px; border-radius: 10px; border-left: 5px solid #4CAF50;'>
+                    <p style='margin:0; font-size:14px; color:#666;'>已累计坚持</p>
+                    <h2 style='margin:0; color:#4CAF50;'>{total_days} 天</h2>
+                </div>
+                """, unsafe_allow_html=True)
+                st.divider()
+        except:
+            pass
+
+    # 原有的导出按钮逻辑
     if os.path.exists(LOG_FILE):
         st.download_button("📊 导出 CSV", open(LOG_FILE, "rb"), f"History_{now_bj.strftime('%m%d')}.csv", "text/csv")
     if os.path.exists(MD_FILE):
         st.download_button("📖 导出 Markdown", open(MD_FILE, "rb"), f"Diary_{now_bj.strftime('%m%d')}.md", "text/markdown")
+    
     st.divider()
     st.write("🏃 **坚持就是胜利！**")
