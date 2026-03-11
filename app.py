@@ -57,6 +57,33 @@ def get_beijing_time():
 
 st.set_page_config(page_title="自律成就系统", page_icon="🚀", layout="centered")
 
+st.markdown("""
+<style>
+.center-box {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 70vh;
+    text-align: center;
+    flex-direction: column;
+}
+
+.quote-card {
+    background: #f9f9f9;
+    padding: 30px;
+    border-left: 8px solid #4CAF50;
+    border-radius: 12px;
+    margin: 20px 0;
+    animation: fadeIn 1.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {opacity:0; transform:translateY(20px);}
+    to {opacity:1; transform:translateY(0);}
+}
+</style>
+""", unsafe_allow_html=True)
+
 now_bj = get_beijing_time()
 today_date_only = now_bj.strftime("%Y/%m/%d")
 today_full_str = now_bj.strftime("%Y年%m月%d日")
@@ -167,6 +194,11 @@ if not st.session_state['entered']:
         st.session_state['entered'] = True
         st.rerun()
     st.stop()
+
+st.markdown(
+f"<p style='font-size:18px;color:gray;'>🕒 {get_beijing_time().strftime('%Y-%m-%d %H:%M')}</p>",
+unsafe_allow_html=True
+)
 
 # --- 4. 打卡主界面 (原封不动) ---
 if not st.session_state['show_summary']:
