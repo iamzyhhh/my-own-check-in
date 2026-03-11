@@ -19,12 +19,22 @@ BACKUP_QUOTES = [
     "“一个人可以被毁灭，但不能给打败。” —— 海明威《老人与海》"
 ]
 
-# --- 【修正后的格式化函数：加入仍需努力部分】 ---
+# --- 工具函数：统计天数 ---
+def get_total_days():
+    if not os.path.exists(LOG_FILE):
+        return 0
+    try:
+        df = pd.read_csv(LOG_FILE, encoding='utf-8-sig')
+        if not df.empty:
+            return df[df.columns[0]].str[:10].nunique()
+    except:
+        return 0
+    return 0
+
+# --- 格式化函数：记事本导出 ---
 def format_log_for_notepads(date, progress, mood, summary, row_data):
     N = len(DAILY_TASKS)
-    # 提取带图标的已完成任务 (索引 2 到 2+N)
     done_tasks = [t for t in row_data[2:2+N] if t] 
-    # 提取带图标的未完成任务 (索引 3+N 之后)
     todo_tasks = [t for t in row_data[3+N:3+2*N] if t]
     
     done_str = "\n".join([f"  * {t}" for t in done_tasks]) if done_tasks else "  * 暂无记录"
@@ -48,7 +58,6 @@ def format_log_for_notepads(date, progress, mood, summary, row_data):
 """
     return log_content
 
-# --- 统一获取北京时间的函数 ---
 def get_beijing_time():
     tz = pytz.timezone('Asia/Shanghai')
     return datetime.now(tz)
@@ -57,6 +66,7 @@ def get_beijing_time():
 
 st.set_page_config(page_title="自律成就系统", page_icon="🚀", layout="centered")
 
+# 保留你的 CSS 样式
 st.markdown("""
 <style>
 .center-box {
@@ -67,7 +77,6 @@ st.markdown("""
     text-align: center;
     flex-direction: column;
 }
-
 .quote-card {
     background: #f9f9f9;
     padding: 30px;
@@ -76,7 +85,6 @@ st.markdown("""
     margin: 20px 0;
     animation: fadeIn 1.5s ease-in-out;
 }
-
 @keyframes fadeIn {
     from {opacity:0; transform:translateY(20px);}
     to {opacity:1; transform:translateY(0);}
@@ -88,7 +96,7 @@ now_bj = get_beijing_time()
 today_date_only = now_bj.strftime("%Y/%m/%d")
 today_full_str = now_bj.strftime("%Y年%m月%d日")
 
-# --- 1. 核心数据保存函数 (原封不动) ---
+# --- 1. 核心数据保存函数 ---
 def save_dual_format(row_data, summary_text="", mood=""):
     N = len(DAILY_TASKS)
     header = ["时间", "进度"] + [f"已完成_{i+1}" for i in range(N)] + ["隔离"] + [f"未完成_{i+1}" for i in range(N)] + ["今日总结"]
@@ -144,7 +152,7 @@ def save_dual_format(row_data, summary_text="", mood=""):
     with open(MD_FILE, 'w', encoding='utf-8-sig') as f:
         f.write(full_md_content)
 
-# --- 2. 辅助函数 (原封不动) ---
+# --- 2. 辅助函数 ---
 def get_refined_quote():
     try:
         response = requests.get("https://v1.hitokoto.cn/?c=d&c=k&min_length=15&max_length=35", timeout=3)
@@ -180,37 +188,25 @@ def get_stats():
     except: pass
     return stats
 
-# --- 3. 页面状态与欢迎页 (原封不动) ---
+# --- 3. 页面状态与欢迎页 ---
 if 'entered' not in st.session_state: st.session_state['entered'] = False
 if 'quote_data' not in st.session_state: st.session_state['quote_data'] = get_refined_quote()
 if 'show_summary' not in st.session_state: st.session_state['show_summary'] = False
 
-
- # --- 3. 页面状态与欢迎页 ---
 if not st.session_state['entered']:
     st.balloons()
+    total_days = get_total_days()
     
-    # 计算累计天数（按日期去重）
-    total_days = 0
-    if os.path.exists(LOG_FILE):
-        try:
-            df_count = pd.read_csv(LOG_FILE, encoding='utf-8-sig')
-            if not df_count.empty:
-                # 提取日期部分（前10位），去重统计
-                total_days = df_count[df_count.columns[0]].str[:10].nunique()
-        except:
-            total_days = 0
-
-    # 1. 大标题
+    # 欢迎页标题
     st.markdown("<h1 style='text-align: center; color: #4CAF50;'>🏆 欢迎回来</h1>", unsafe_allow_html=True)
-
-     # 2. 激励语
+    
+    # ✨ 找回来了：欢迎页的欢迎语
     st.markdown("<p style='text-align: center; color: #888; font-style: italic;'>欢迎回来，新的机遇与挑战正在等着你 ✨</p>", unsafe_allow_html=True)
     
-    # ✨ 新增：在标题下显示实时北京时间
-    st.markdown(f"🕒 **北京时间：{get_beijing_time().strftime('%Y-%m-%d %H:%M:%S')}**")
+    # ✨ 找回来了：欢迎页的北京时间
+    st.markdown(f"<p style='text-align: center;'>🕒 <b>北京时间：{get_beijing_time().strftime('%Y-%m-%d %H:%M:%S')}</b></p>", unsafe_allow_html=True)
     
-    # 3. 累计天数显示（大号醒目字体）
+    # 累计天数展示
     st.markdown(f"""
         <div style='text-align: center; margin-bottom: 10px;'>
             <span style='font-size: 20px; color: #666;'>已累计坚持</span>
@@ -219,29 +215,29 @@ if not st.session_state['entered']:
         </div>
     """, unsafe_allow_html=True)
     
-    # 3. 激励语
-    st.markdown("<p style='text-align: center; color: #888; font-style: italic;'>欢迎回来，新的机遇与挑战正在等着你 ✨</p>", unsafe_allow_html=True)
-    
-    # 4. 随机金句卡片
+    # 金句卡片
     content, meta = st.session_state['quote_data']
-    st.markdown(f"<div style='background: #f9f9f9; padding: 30px; border-left: 8px solid #4CAF50; border-radius: 10px; margin: 20px 0;'><h3>{content}</h3><p style='text-align:right;'>{meta}</p></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='quote-card'><h3>{content}</h3><p style='text-align:right;'>{meta}</p></div>", unsafe_allow_html=True)
     
     if st.button("✨ 开启今日挑战", use_container_width=True):
         st.session_state['entered'] = True
         st.rerun()
     st.stop()
 
-
-# --- 4. 打卡主界面 (原封不动) ---
+# --- 4. 打卡主界面 ---
 if not st.session_state['show_summary']:
     st.title("🎯 进度实时看板")
-    total_days = get_total_days()
-st.info(f"🏆 你已经坚持了 **{total_days} 天**！继续保持 🚀")
     
-   
-    #新增一行字
+    current_days = get_total_days()
+    st.info(f"🏆 你已经坚持了 **{current_days} 天**！继续保持 🚀")
+    
+    # ✨ 找回来了：主界面的欢迎语 (修复了缩进报错)
     st.markdown("##### 要记录些什么吗？天天开心哦 😄")
+    
+    # ✨ 找回来了：主界面的实时北京时间
+    st.markdown(f"🕒 **北京时间：{get_beijing_time().strftime('%Y-%m-%d %H:%M:%S')}**")
     st.divider()
+    
     stats = get_stats()
     done_list = []
     
@@ -281,7 +277,7 @@ st.info(f"🏆 你已经坚持了 **{total_days} 天**！继续保持 🚀")
         st.session_state['show_summary'] = True
         st.rerun()
 
-# --- 5. 累计复盘界面 (在此处新增导出按钮，逻辑完整捕获未完成项) ---
+# --- 5. 累计复盘界面 ---
 else:
     st.title("📝 随笔累计")
     mood = st.radio("当前心情：", ["😊 动力满满", "😐 正常执行", "😫 稍感疲惫"], horizontal=True)
@@ -305,7 +301,7 @@ else:
 
     if st.session_state.get('note_ready', False):
         st.divider()
-        st.success("✅ 记事本备份已就绪 (包含今日未完成项)：")
+        st.success("✅ 记事本备份已就绪：")
         
         final_txt = format_log_for_notepads(
             get_beijing_time().strftime("%Y-%m-%d %H:%M"),
@@ -316,7 +312,7 @@ else:
         )
         
         st.download_button(
-            label="💾 下载完整荣耀记录 (.txt)",
+            label="💾 下载今日记录 (.txt)",
             data=final_txt,
             file_name=f"Daily_Record_{now_bj.strftime('%m%d')}.txt",
             mime="text/plain",
@@ -331,27 +327,15 @@ else:
 # --- 6. 侧边栏 ---
 with st.sidebar:
     st.header("📂 数据中心")
-    
-    # ✨ 新增：累计打卡天数统计
-    if os.path.exists(LOG_FILE):
-        try:
-            df_sidebar = pd.read_csv(LOG_FILE, encoding='utf-8-sig')
-            if not df_sidebar.empty:
-                # 提取“时间”列的前 10 位（即 YYYY/MM/DD），然后去重统计数量
-                total_days = df_sidebar[df_sidebar.columns[0]].str[:10].nunique()
-                
-                # 美化显示
-                st.markdown(f"""
-                <div style='background: #f0f2f6; padding: 15px; border-radius: 10px; border-left: 5px solid #4CAF50;'>
-                    <p style='margin:0; font-size:14px; color:#666;'>已累计坚持</p>
-                    <h2 style='margin:0; color:#4CAF50;'>{total_days} 天</h2>
-                </div>
-                """, unsafe_allow_html=True)
-                st.divider()
-        except:
-            pass
+    sb_days = get_total_days()
+    st.markdown(f"""
+    <div style='background: #f0f2f6; padding: 15px; border-radius: 10px; border-left: 5px solid #4CAF50;'>
+        <p style='margin:0; font-size:14px; color:#666;'>已累计坚持</p>
+        <h2 style='margin:0; color:#4CAF50;'>{sb_days} 天</h2>
+    </div>
+    """, unsafe_allow_html=True)
+    st.divider()
 
-    # 原有的导出按钮逻辑
     if os.path.exists(LOG_FILE):
         st.download_button("📊 导出 CSV", open(LOG_FILE, "rb"), f"History_{now_bj.strftime('%m%d')}.csv", "text/csv")
     if os.path.exists(MD_FILE):
