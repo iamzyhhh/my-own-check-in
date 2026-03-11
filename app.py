@@ -201,7 +201,7 @@ if not st.session_state['entered']:
     st.markdown("<h1 style='text-align: center; color: #4CAF50;'>🏆 欢迎回来</h1>", unsafe_allow_html=True)
     
     # ✨ 找回来了：欢迎页的欢迎语
-    st.markdown("<p style='text-align: center; color: #888; font-style: italic;'>欢迎回来，新的机遇与挑战正在等着你 ✨</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #555; font-size: 24px; font-weight: bold;'>欢迎回来，新的机遇与挑战正在等着你 ✨</p>", unsafe_allow_html=True)
     
     # ✨ 找回来了：欢迎页的北京时间
     st.markdown(f"<p style='text-align: center;'>🕒 <b>北京时间：{get_beijing_time().strftime('%Y-%m-%d %H:%M:%S')}</b></p>", unsafe_allow_html=True)
