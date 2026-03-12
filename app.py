@@ -19,6 +19,14 @@ BACKUP_QUOTES = [
     "“一个人可以被毁灭，但不能给打败。” —— 海明威《老人与海》"
 ]
 
+# ✨ 新增：成就系统配置
+ACHIEVEMENTS = [
+    {"name": "🌱 初露锋芒", "days": 1},
+    {"name": "🔥 习惯养成", "days": 7},
+    {"name": "👑 坚持不懈", "days": 21},
+    {"name": "💎 自律达人", "days": 100}
+]
+
 # --- 工具函数：统计天数 ---
 def get_total_days():
     if not os.path.exists(LOG_FILE):
@@ -30,6 +38,14 @@ def get_total_days():
     except:
         return 0
     return 0
+
+# ✨ 新增：成就检查逻辑
+def check_achievements(current_days):
+    unlocked = []
+    for ach in ACHIEVEMENTS:
+        if current_days >= ach["days"]:
+            unlocked.append(ach["name"])
+    return unlocked
 
 # --- 格式化函数：记事本导出 ---
 def format_log_for_notepads(date, progress, mood, summary, row_data):
@@ -196,17 +212,9 @@ if 'show_summary' not in st.session_state: st.session_state['show_summary'] = Fa
 if not st.session_state['entered']:
     st.balloons()
     total_days = get_total_days()
-    
-    # 欢迎页标题
     st.markdown("<h1 style='text-align: center; color: #4CAF50;'>🏆 欢迎回来</h1>", unsafe_allow_html=True)
-    
-    # ✨ 找回来了：欢迎页的欢迎语
     st.markdown("<p style='text-align: center; color: #555; font-size: 24px; font-weight: bold;'>欢迎回来，新的机遇与挑战正在等着你 ✨</p>", unsafe_allow_html=True)
-    
-    # ✨ 找回来了：欢迎页的北京时间
     st.markdown(f"<p style='text-align: center;'>🕒 <b>北京时间：{get_beijing_time().strftime('%Y-%m-%d %H:%M:%S')}</b></p>", unsafe_allow_html=True)
-    
-    # 累计天数展示
     st.markdown(f"""
         <div style='text-align: center; margin-bottom: 10px;'>
             <span style='font-size: 20px; color: #666;'>已累计坚持</span>
@@ -214,11 +222,8 @@ if not st.session_state['entered']:
             <span style='font-size: 20px; color: #666;'>天</span>
         </div>
     """, unsafe_allow_html=True)
-    
-    # 金句卡片
     content, meta = st.session_state['quote_data']
     st.markdown(f"<div class='quote-card'><h3>{content}</h3><p style='text-align:right;'>{meta}</p></div>", unsafe_allow_html=True)
-    
     if st.button("✨ 开启今日挑战", use_container_width=True):
         st.session_state['entered'] = True
         st.rerun()
@@ -227,30 +232,26 @@ if not st.session_state['entered']:
 # --- 4. 打卡主界面 ---
 if not st.session_state['show_summary']:
     st.title("🎯 进度实时看板")
-    
     current_days = get_total_days()
     st.info(f"🏆 你已经坚持了 **{current_days} 天**！继续保持 🚀")
-    # ===== 成就系统显示 =====
-unlocked = check_achievements(current_days)
 
-st.subheader("🏅 成就墙")
+    # ✨ 修复：成就系统显示
+    unlocked = check_achievements(current_days)
+    with st.expander("🏅 我的成就墙", expanded=False):
+        cols = st.columns(2)
+        for idx, ach in enumerate(ACHIEVEMENTS):
+            with cols[idx % 2]:
+                if ach["name"] in unlocked:
+                    st.success(f"{ach['name']} ✔ ({ach['days']}天)")
+                else:
+                    st.write(f"🔒 {ach['name']} ({ach['days']}天)")
 
-for ach in ACHIEVEMENTS:
-    if ach["name"] in unlocked:
-        st.success(f"{ach['name']}  ✔  （{ach['days']}天）")
-    else:
-        st.write(f"{ach['name']}  🔒  （{ach['days']}天）")
-    
-    # ✨ 找回来了：主界面的欢迎语 (修复了缩进报错)
     st.markdown("##### 要记录些什么吗？天天开心哦 😄")
-    
-    # ✨ 找回来了：主界面的实时北京时间
     st.markdown(f"🕒 **北京时间：{get_beijing_time().strftime('%Y-%m-%d %H:%M:%S')}**")
     st.divider()
     
     stats = get_stats()
     done_list = []
-    
     st.subheader(f"📅 {today_full_str}")
     for task in DAILY_TASKS:
         s, f = stats[task]['streak'], stats[task]['fail']
@@ -264,7 +265,6 @@ for ach in ACHIEVEMENTS:
         todo_list = [t for t in DAILY_TASKS if t not in done_list]
         N = len(DAILY_TASKS)
         new_row = [get_beijing_time().strftime("%Y/%m/%d %H:%M"), f"{(len(done_list)/N*100):.0f}%"]
-        
         sorted_done = sorted(done_list, key=lambda x: stats[x]['streak'], reverse=True)
         for i in range(N):
             if i < len(sorted_done):
@@ -274,7 +274,6 @@ for ach in ACHIEVEMENTS:
                 new_row.append(f"{icon}{d}/{stats[t]['total'] + 1}d {t}")
             else: new_row.append("")
         new_row.append(">>>")
-        
         sorted_todo = sorted(todo_list, key=lambda x: stats[x]['fail'], reverse=True)
         for i in range(N):
             if i < len(sorted_todo):
@@ -282,7 +281,6 @@ for ach in ACHIEVEMENTS:
                 f = 1 if stats[t]['streak'] > 0 else stats[t]['fail'] + 1
                 new_row.append(f"❌{f}d {t}")
             else: new_row.append("")
-        
         st.session_state['temp_data'] = new_row
         st.session_state['show_summary'] = True
         st.rerun()
@@ -307,19 +305,18 @@ else:
         if st.button("✅ 提交感悟并同步"):
             save_dual_format(st.session_state['temp_data'], summary_input, mood)
             st.toast("云端数据已同步！")
+            
+            # ✨ 修复：保存后的成就达成特效
             new_days = get_total_days()
-unlocked = check_achievements(new_days)
-
-for ach in ACHIEVEMENTS:
-    if new_days == ach["days"]:
-        st.balloons()
-        st.toast(f"🎉 成就解锁：{ach['name']}！")
+            for ach in ACHIEVEMENTS:
+                if new_days == ach["days"]:
+                    st.balloons()
+                    st.toast(f"🎉 成就解锁：{ach['name']}！")
             st.session_state['note_ready'] = True
 
     if st.session_state.get('note_ready', False):
         st.divider()
         st.success("✅ 记事本备份已就绪：")
-        
         final_txt = format_log_for_notepads(
             get_beijing_time().strftime("%Y-%m-%d %H:%M"),
             st.session_state['temp_data'][1],
@@ -327,7 +324,6 @@ for ach in ACHIEVEMENTS:
             summary_input,
             st.session_state['temp_data']
         )
-        
         st.download_button(
             label="💾 下载今日记录 (.txt)",
             data=final_txt,
@@ -335,13 +331,11 @@ for ach in ACHIEVEMENTS:
             mime="text/plain",
             use_container_width=True
         )
-        
         if st.button("打卡流程结束"):
             st.session_state['note_ready'] = False
             st.session_state['show_summary'] = False
             st.rerun()
 
-# --- 6. 侧边栏 ---
 with st.sidebar:
     st.header("📂 数据中心")
     sb_days = get_total_days()
@@ -352,11 +346,9 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
     st.divider()
-
     if os.path.exists(LOG_FILE):
         st.download_button("📊 导出 CSV", open(LOG_FILE, "rb"), f"History_{now_bj.strftime('%m%d')}.csv", "text/csv")
     if os.path.exists(MD_FILE):
         st.download_button("📖 导出 Markdown", open(MD_FILE, "rb"), f"Diary_{now_bj.strftime('%m%d')}.md", "text/markdown")
-    
     st.divider()
     st.write("🏃 **坚持就是胜利！**")
