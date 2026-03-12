@@ -230,6 +230,16 @@ if not st.session_state['show_summary']:
     
     current_days = get_total_days()
     st.info(f"🏆 你已经坚持了 **{current_days} 天**！继续保持 🚀")
+    # ===== 成就系统显示 =====
+unlocked = check_achievements(current_days)
+
+st.subheader("🏅 成就墙")
+
+for ach in ACHIEVEMENTS:
+    if ach["name"] in unlocked:
+        st.success(f"{ach['name']}  ✔  （{ach['days']}天）")
+    else:
+        st.write(f"{ach['name']}  🔒  （{ach['days']}天）")
     
     # ✨ 找回来了：主界面的欢迎语 (修复了缩进报错)
     st.markdown("##### 要记录些什么吗？天天开心哦 😄")
@@ -297,6 +307,13 @@ else:
         if st.button("✅ 提交感悟并同步"):
             save_dual_format(st.session_state['temp_data'], summary_input, mood)
             st.toast("云端数据已同步！")
+            new_days = get_total_days()
+unlocked = check_achievements(new_days)
+
+for ach in ACHIEVEMENTS:
+    if new_days == ach["days"]:
+        st.balloons()
+        st.toast(f"🎉 成就解锁：{ach['name']}！")
             st.session_state['note_ready'] = True
 
     if st.session_state.get('note_ready', False):
