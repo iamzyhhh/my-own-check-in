@@ -97,9 +97,40 @@ def format_txt_content(date, done_list, mood, summary):
 # ================= 页面设置 =================
 st.set_page_config(page_title="自律成就系统", page_icon="🚀", layout="centered")
 
+# ================= 样式美化区域 =================
 st.markdown("""
 <style>
-.quote-card { background:#f9f9f9; padding:30px; border-left:8px solid #4CAF50; border-radius:12px; margin:20px 0; }
+/* 1. 核心修改：大幅度放大复选框的任务文字 */
+.stCheckbox div[data-testid="stMarkdownContainer"] p {
+    font-size: 24px !important;  /* 调大到了24px，非常醒目 */
+    font-weight: 600 !important; /* 加粗 */
+    color: #1B5E20 !important;   /* 深绿色，更有质感 */
+    margin-bottom: 10px !important;
+}
+
+/* 2. 放大左侧的勾选小方块 */
+[data-testid="stCheckbox"] {
+    transform: scale(1.3);      /* 放大1.3倍 */
+    margin-right: 15px;
+}
+
+/* 3. 给任务清单加一个装饰背板，压住视觉重心 */
+.task-box {
+    background-color: #f1f8e9;   /* 淡淡的绿色背景 */
+    padding: 25px;
+    border-radius: 15px;
+    border: 2px solid #a5d6a7;
+    margin: 20px 0;
+}
+
+/* 原有的金句卡片样式 */
+.quote-card {
+    background: #f9f9f9;
+    padding: 30px;
+    border-left: 8px solid #4CAF50;
+    border-radius: 12px;
+    margin: 20px 0;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -155,12 +186,16 @@ if not st.session_state['show_summary']:
             else: st.write(f"🔒 {ach['name']} ({ach['days']}天)")
 
     st.divider()
-    st.subheader("📅 今日任务清单")
+    st.markdown("<h2 style='color: #2E7D32;'>📅 今日任务清单</h2>", unsafe_allow_html=True)
+
+    # 用 HTML 给任务清单套上背板
+    st.markdown('<div class="task-box">', unsafe_allow_html=True)
     done_list = []
     for task in DAILY_TASKS:
-        if st.checkbox(task, key=f"main_{task}"): done_list.append(task)
-    
-    st.progress(len(done_list) / len(DAILY_TASKS))
+        # 这里的文字会自动应用上面 CSS 里的 24px 大字体
+        if st.checkbox(task, key=f"main_{task}"): 
+            done_list.append(task)
+    st.markdown('</div>', unsafe_allow_html=True) # 结束背板
     
     if st.button("🚀 确认完成，进入总结", use_container_width=True):
         # 暂时记录数据到 session，不立即写文件，等总结页确认
