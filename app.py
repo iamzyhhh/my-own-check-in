@@ -74,7 +74,6 @@ def get_longest_streak():
 def check_achievements(days):
     return [ach["name"] for ach in ACHIEVEMENTS if days >= ach["days"]]
 
-# --- 新增：格式化 TXT 内容函数 ---
 def format_txt_content(date, done_list, mood, summary):
     todo_list = [t for t in DAILY_TASKS if t not in done_list]
     done_str = "\n".join([f" ✅ {t}" for t in done_list]) if done_list else " ⚪ 暂无完成"
@@ -97,41 +96,36 @@ def format_txt_content(date, done_list, mood, summary):
 # ================= 页面设置 =================
 st.set_page_config(page_title="自律成就系统", page_icon="🚀", layout="centered")
 
-# ================= 样式美化区域 =================
+# ================= 样式美化区域 (修复对齐) =================
 st.markdown("""
 <style>
-/* 1. 放大复选框文字，并调整对齐 */
+/* 1. 放大复选框文字，强制垂直居中对齐 */
 .stCheckbox div[data-testid="stMarkdownContainer"] p {
     font-size: 24px !important;  
     font-weight: 600 !important; 
     color: #333 !important;      
-    /* 核心修复：通过调整行高和边距，让文字下沉，与方框中线对齐 */
-    line-height: 1.6 !important; 
-    padding-top: 5px !important; 
-    margin-bottom: 8px !important;
-}
-
-/* 2. 优化勾选框的大小和垂直位置 */
-[data-testid="stCheckbox"] {
-    transform: scale(1.3);       /* 稍微再大一点点 */
-    margin-right: 12px;
-    /* 针对某些浏览器的微调，确保方框本身不漂浮 */
-    vertical-align: middle !important;
-}
-
-/* 3. 让整个选项行垂直居中对齐 */
-[data-testid="stCheckbox"] > label {
+    line-height: 1.2 !important; 
+    margin: 0 !important;
+    padding: 0 !important;
     display: flex !important;
     align-items: center !important;
 }
 
-.quote-card {
-    background:#f9f9f9; padding:30px; border-left:8px solid #4CAF50; border-radius:12px; margin:20px 0;
+/* 2. 放大勾选框并修正位置偏差 */
+[data-testid="stCheckbox"] {
+    transform: scale(1.3);
+    margin-right: 15px;
+    display: inline-flex !important;
+    align-items: center !important;
 }
-</style>
-""", unsafe_allow_html=True)
 
-/* 金句卡片保持原样 */
+/* 3. 修正 Label 容器高度，防止文字飘起 */
+[data-testid="stCheckbox"] label {
+    display: flex !important;
+    align-items: center !important;
+    padding: 10px 0 !important;
+}
+
 .quote-card {
     background:#f9f9f9; padding:30px; border-left:8px solid #4CAF50; border-radius:12px; margin:20px 0;
 }
@@ -192,24 +186,18 @@ if not st.session_state['show_summary']:
     st.divider()
     st.subheader("📅 今日任务清单")
 
-    # 直接列出任务，不再使用 <div> 包装，确保不影响进度条显示
     done_list = []
     for task in DAILY_TASKS:
-        # 这里的文字会自动应用上面 CSS 定义的 24px
         if st.checkbox(task, key=f"main_{task}"): 
             done_list.append(task)
     
-    st.write("") # 留点间距
-
-    # ✨ 找回消失的进度条
+    st.write("") 
     st.markdown("### 📊 今日完成度")
     progress_val = len(done_list) / len(DAILY_TASKS)
     st.progress(progress_val)
     st.write(f"已完成 **{len(done_list)} / {len(DAILY_TASKS)}** 项任务")
 
-    
     if st.button("🚀 确认完成，进入总结", use_container_width=True):
-        # 暂时记录数据到 session，不立即写文件，等总结页确认
         st.session_state['temp_done_list'] = done_list
         st.session_state['show_summary'] = True
         st.rerun()
@@ -221,7 +209,7 @@ else:
     st.info(f"今日已勾选完成 {len(done_list)} 项任务。")
     
     mood = st.radio("当前心情：", ["😊 动力满满", "😐 正常执行", "😫 稍感疲惫"], horizontal=True)
-    summary_input = st.text_area("想对自己说点什么吗？要天天开心哦😄", height=150)
+    summary_input = st.text_area("想对自己说点什么吗？要天天开心哦 😄", height=150)
     
     col1, col2, col3 = st.columns(3)
     
@@ -232,7 +220,6 @@ else:
             
     with col2:
         if st.button("⏩ 跳过感悟直接打卡"):
-            # 存入 CSV
             today_full = get_beijing_time().strftime("%Y/%m/%d %H:%M")
             row = [today_full] + ["✔" if t in done_list else "" for t in DAILY_TASKS]
             with open(LOG_FILE, "a", newline="", encoding="utf-8-sig") as f:
@@ -243,25 +230,21 @@ else:
 
     with col3:
         if st.button("✅ 提交总结并导出"):
-            # 1. 存入 CSV
             today_full = get_beijing_time().strftime("%Y/%m/%d %H:%M")
             row = [today_full] + ["✔" if t in done_list else "" for t in DAILY_TASKS]
             with open(LOG_FILE, "a", newline="", encoding="utf-8-sig") as f:
                 csv.writer(f).writerow(row)
             
-            # 2. 触发成就检查
             new_days = get_total_days()
             for ach in ACHIEVEMENTS:
                 if new_days == ach["days"]:
                     st.balloons()
                     st.toast(f"🎉 解锁成就: {ach['name']}!")
             
-            # 3. 准备下载内容
             st.session_state['final_txt'] = format_txt_content(today_full, done_list, mood, summary_input)
             st.session_state['note_ready'] = True
             st.toast("总结记录成功！")
 
-    # 下载区域
     if st.session_state.get('note_ready', False):
         st.divider()
         st.success("✨ 今日总结文档已生成：")
