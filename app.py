@@ -255,7 +255,7 @@ st.markdown("### 📊 今日完成度")
 st.progress(progress)
 
 st.write(f"已完成 **{len(done_list)} / {len(DAILY_TASKS)}** 项任务")
-```
+
 
 
     if st.button("🚀 提交今日打卡", use_container_width=True):
@@ -324,4 +324,4 @@ with st.sidebar:
     st.divider()
 
     st.write("🏃 坚持就是胜利！")
-```
+
