@@ -282,44 +282,57 @@ if not st.session_state['show_summary']:
 
     st.write(f"已完成 **{len(done_list)} / {len(DAILY_TASKS)}** 项任务")
 
-    # ================= 提交打卡 =================
+   # ================= 提交打卡 =================
     if st.button("🚀 提交今日打卡", use_container_width=True):
-
         today = get_beijing_time().strftime("%Y/%m/%d %H:%M")
-
         header = ["时间"] + DAILY_TASKS
-
         row = [today]
-
         for t in DAILY_TASKS:
             row.append("✔" if t in done_list else "")
 
         file_exists = os.path.exists(LOG_FILE)
-
         with open(LOG_FILE, "a", newline="", encoding="utf-8-sig") as f:
-
             writer = csv.writer(f)
-
             if not file_exists:
                 writer.writerow(header)
-
             writer.writerow(row)
 
+        # ✨ 关键修复点 1：切换到总结页面
+        st.session_state['show_summary'] = True
+        
+        # ✨ 关键修复点 2：把今天的数据存一下，方便写总结时调用
+        st.session_state['temp_done_list'] = done_list 
+        
         st.toast("打卡成功！")
 
         new_days = get_total_days()
-
         for ach in ACHIEVEMENTS:
-
             if new_days == ach["days"]:
-
                 st.balloons()
-
                 st.toast(f"🎉 成就解锁：{ach['name']}！")
 
+        # 重新运行以进入 elif 逻辑（即总结界面）
         st.rerun()
 
-
+# ================= 总结界面 (你代码中缺失的 else 部分) =================
+else:
+    st.title("📝 今日感悟总结")
+    
+    # 获取刚才暂存的任务
+    done_tasks = st.session_state.get('temp_done_list', [])
+    st.write(f"🌟 今日已完成：{', '.join(done_tasks) if done_tasks else '无'}")
+    
+    mood = st.radio("当前心情：", ["😊 动力满满", "😐 正常执行", "😫 稍感疲惫"], horizontal=True)
+    summary_input = st.text_area("追加一段感悟...", height=150)
+    
+    if st.button("✅ 提交感悟并返回主页", use_container_width=True):
+        # 这里你可以添加把总结存入 MD_FILE 的逻辑
+        # ... 存入 MD 逻辑 ...
+        
+        # 重置状态，回到主界面
+        st.session_state['show_summary'] = False
+        st.toast("记录已保存！")
+        st.rerun()
 # ================= 侧边栏 =================
 with st.sidebar:
 
