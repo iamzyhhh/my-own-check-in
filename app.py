@@ -100,19 +100,36 @@ st.set_page_config(page_title="自律成就系统", page_icon="🚀", layout="ce
 # ================= 样式美化区域 =================
 st.markdown("""
 <style>
-/* 1. 强制放大复选框文字，去掉背景框，保持清爽 */
+/* 1. 放大复选框文字，并调整对齐 */
 .stCheckbox div[data-testid="stMarkdownContainer"] p {
-    font-size: 24px !important;  /* 字体调大 */
-    font-weight: 600 !important; /* 加粗 */
-    color: #333 !important;      /* 标准深色 */
-    margin-bottom: 5px !important;
+    font-size: 24px !important;  
+    font-weight: 600 !important; 
+    color: #333 !important;      
+    /* 核心修复：通过调整行高和边距，让文字下沉，与方框中线对齐 */
+    line-height: 1.6 !important; 
+    padding-top: 5px !important; 
+    margin-bottom: 8px !important;
 }
 
-/* 2. 让勾选框稍微大一点点，匹配文字 */
+/* 2. 优化勾选框的大小和垂直位置 */
 [data-testid="stCheckbox"] {
-    transform: scale(1.2);
-    margin-right: 10px;
+    transform: scale(1.3);       /* 稍微再大一点点 */
+    margin-right: 12px;
+    /* 针对某些浏览器的微调，确保方框本身不漂浮 */
+    vertical-align: middle !important;
 }
+
+/* 3. 让整个选项行垂直居中对齐 */
+[data-testid="stCheckbox"] > label {
+    display: flex !important;
+    align-items: center !important;
+}
+
+.quote-card {
+    background:#f9f9f9; padding:30px; border-left:8px solid #4CAF50; border-radius:12px; margin:20px 0;
+}
+</style>
+""", unsafe_allow_html=True)
 
 /* 金句卡片保持原样 */
 .quote-card {
