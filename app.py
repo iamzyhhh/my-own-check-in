@@ -100,36 +100,23 @@ st.set_page_config(page_title="自律成就系统", page_icon="🚀", layout="ce
 # ================= 样式美化区域 =================
 st.markdown("""
 <style>
-/* 1. 核心修改：大幅度放大复选框的任务文字 */
+/* 1. 强制放大复选框文字，去掉背景框，保持清爽 */
 .stCheckbox div[data-testid="stMarkdownContainer"] p {
-    font-size: 24px !important;  /* 调大到了24px，非常醒目 */
+    font-size: 24px !important;  /* 字体调大 */
     font-weight: 600 !important; /* 加粗 */
-    color: #1B5E20 !important;   /* 深绿色，更有质感 */
-    margin-bottom: 10px !important;
+    color: #333 !important;      /* 标准深色 */
+    margin-bottom: 5px !important;
 }
 
-/* 2. 放大左侧的勾选小方块 */
+/* 2. 让勾选框稍微大一点点，匹配文字 */
 [data-testid="stCheckbox"] {
-    transform: scale(1.3);      /* 放大1.3倍 */
-    margin-right: 15px;
+    transform: scale(1.2);
+    margin-right: 10px;
 }
 
-/* 3. 给任务清单加一个装饰背板，压住视觉重心 */
-.task-box {
-    background-color: #f1f8e9;   /* 淡淡的绿色背景 */
-    padding: 25px;
-    border-radius: 15px;
-    border: 2px solid #a5d6a7;
-    margin: 20px 0;
-}
-
-/* 原有的金句卡片样式 */
+/* 金句卡片保持原样 */
 .quote-card {
-    background: #f9f9f9;
-    padding: 30px;
-    border-left: 8px solid #4CAF50;
-    border-radius: 12px;
-    margin: 20px 0;
+    background:#f9f9f9; padding:30px; border-left:8px solid #4CAF50; border-radius:12px; margin:20px 0;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -186,16 +173,23 @@ if not st.session_state['show_summary']:
             else: st.write(f"🔒 {ach['name']} ({ach['days']}天)")
 
     st.divider()
-    st.markdown("<h2 style='color: #2E7D32;'>📅 今日任务清单</h2>", unsafe_allow_html=True)
+    st.subheader("📅 今日任务清单")
 
-    # 用 HTML 给任务清单套上背板
-    st.markdown('<div class="task-box">', unsafe_allow_html=True)
+    # 直接列出任务，不再使用 <div> 包装，确保不影响进度条显示
     done_list = []
     for task in DAILY_TASKS:
-        # 这里的文字会自动应用上面 CSS 里的 24px 大字体
+        # 这里的文字会自动应用上面 CSS 定义的 24px
         if st.checkbox(task, key=f"main_{task}"): 
             done_list.append(task)
-    st.markdown('</div>', unsafe_allow_html=True) # 结束背板
+    
+    st.write("") # 留点间距
+
+    # ✨ 找回消失的进度条
+    st.markdown("### 📊 今日完成度")
+    progress_val = len(done_list) / len(DAILY_TASKS)
+    st.progress(progress_val)
+    st.write(f"已完成 **{len(done_list)} / {len(DAILY_TASKS)}** 项任务")
+
     
     if st.button("🚀 确认完成，进入总结", use_container_width=True):
         # 暂时记录数据到 session，不立即写文件，等总结页确认
