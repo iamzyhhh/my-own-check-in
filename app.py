@@ -43,7 +43,24 @@ def get_all_dates():
     return dates
 
 def get_total_days():
-    return len(set(get_all_dates()))
+    if not os.path.exists(LOG_FILE): 
+        return 0
+    
+    try:
+        with open(LOG_FILE, mode="r", encoding="utf-8-sig") as f:
+            reader = csv.reader(f)
+            next(reader, None) # 跳过表头
+            first_row = next(reader, None) # 获取第一条打卡记录
+            if first_row:
+                # 拿到你人生中第一次打卡的日期
+                start_date_str = first_row[0].split(" ")[0].replace("-", "/")
+                start_date = datetime.strptime(start_date_str, "%Y/%m/%d")
+                # 计算今天和第一天的差值
+                today = datetime.now()
+                return (today - start_date).days + 1
+    except:
+        pass
+    return 0
 
 def get_current_streak():
     dates = sorted(set(get_all_dates()))
