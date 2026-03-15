@@ -155,12 +155,37 @@ if 'show_summary' not in st.session_state: st.session_state['show_summary'] = Fa
 if 'note_ready' not in st.session_state: st.session_state['note_ready'] = False
 
 def get_refined_quote():
-    try:
-        response = requests.get("https://v1.hitokoto.cn/?c=d&c=k&min_length=15&max_length=35", timeout=3)
-        if response.status_code == 200:
-            data = response.json()
-            return f"“{data['hitokoto']}”", f"—— {data['from_who'] or '佚名'} 《{data['from']}》"
-    except: pass
+    # 允许的字数范围：严格限制在 15-35 字之间，保证 20 字左右的观感
+    MIN_LEN = 15
+    MAX_LEN = 35
+    
+    # 尝试抓取次数上限，防止死循环
+    MAX_RETRIES = 5 
+    
+    for _ in range(MAX_RETRIES):
+        try:
+            # c=d (哲学), c=k (诗词), c=i (励志)
+            url = f"https://v1.hitokoto.cn/?c=d&c=k&c=i&min_length={MIN_LEN}&max_length={MAX_LEN}"
+            response = requests.get(url, timeout=3)
+            
+            if response.status_code == 200:
+                data = response.json()
+                content = data['hitokoto']
+                
+                # 额外的关键词过滤：过滤掉过于二次元或口水话的内容
+                bad_words = ["轻小说", "漫画", "动画", "游戏"]
+                if any(word in data['from'] for word in bad_words):
+                    continue
+                
+                # 检查字数是否符合你的“20字左右”
+                if MIN_LEN <= len(content) <= MAX_LEN:
+                    author = data['from_who'] or "佚名"
+                    source = f"《{data['from']}》"
+                    return f"“{content}”", f"—— {author} {source}"
+        except:
+            break # 报错则跳出循环使用备用金句
+            
+    # 如果接口没刷出合适的，或者网络报错，则从你认可的高质量本地库里随机选
     return random.choice(BACKUP_QUOTES).split(" —— ")
 
 if 'quote_data' not in st.session_state:
