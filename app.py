@@ -44,38 +44,44 @@ def format_txt_content(date, done_list, mood, summary):
 # ================= 页面设置 =================
 st.set_page_config(page_title="自律打卡系统", page_icon="🚀", layout="centered")
 
-# ================= 样式美化区域 =================
+# ================= 样式美化区域 (精修对齐) =================
 st.markdown("""
 <style>
-/* 1. 放大复选框文字，强制垂直居中对齐 */
+/* 1. 针对复选框文字容器：强制使用 Flex 布局并居中 */
 .stCheckbox div[data-testid="stMarkdownContainer"] p {
     font-size: 24px !important;  
     font-weight: 600 !important; 
     color: #333 !important;      
-    line-height: 1.2 !important; 
+    /* 关键：设置行高为 1，并确保没有上下 margin 干扰 */
+    line-height: 1.0 !important; 
     margin: 0 !important;
     padding: 0 !important;
     display: flex !important;
     align-items: center !important;
 }
 
-/* 2. 放大勾选框并修正位置偏差 */
-[data-testid="stCheckbox"] {
-    transform: scale(1.3);
-    margin-right: 15px;
-    display: inline-flex !important;
-    align-items: center !important;
+/* 2. 针对方框（Input）本身：放大并微调位移 */
+[data-testid="stCheckbox"] input {
+    width: 20px !important;
+    height: 20px !important;
 }
 
-/* 3. 修正 Label 容器高度 */
+/* 3. 针对整个 Label 容器：这是方框和文字的共同父级 */
 [data-testid="stCheckbox"] label {
     display: flex !important;
-    align-items: center !important;
-    padding: 10px 0 !important;
+    align-items: center !important; /* 强制垂直居中 */
+    gap: 12px !important;          /* 方框和文字的间距 */
+    padding: 8px 0 !important;      /* 增加行间距，避免太挤 */
+    min-height: 40px !important;   /* 确保容器高度足够 */
 }
 
+/* 4. 欢迎页卡片样式 */
 .quote-card {
-    background:#f9f9f9; padding:30px; border-left:8px solid #4CAF50; border-radius:12px; margin:20px 0;
+    background:#f9f9f9; 
+    padding:30px; 
+    border-left:8px solid #4CAF50; 
+    border-radius:12px; 
+    margin:20px 0;
 }
 </style>
 """, unsafe_allow_html=True)
